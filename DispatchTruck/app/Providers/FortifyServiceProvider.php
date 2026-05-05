@@ -7,6 +7,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;  // Add this import
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Fortify;
@@ -26,9 +27,22 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureViewNamespaces();  // Updated method
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+    }
+
+    /**
+     * Configure view namespaces.
+     */
+    private function configureViewNamespaces(): void
+    {
+        // Register the 'pages' namespace for auth views
+        View::addNamespace('pages', resource_path('views/pages'));
+
+        // Register the 'layouts' namespace for layout components
+        View::addNamespace('layouts', resource_path('views/layouts'));
     }
 
     /**
@@ -45,13 +59,13 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn () => view('pages::auth.login'));
-        Fortify::verifyEmailView(fn () => view('pages::auth.verify-email'));
-        Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
-        Fortify::confirmPasswordView(fn () => view('pages::auth.confirm-password'));
-        Fortify::registerView(fn () => view('pages::auth.register'));
-        Fortify::resetPasswordView(fn () => view('pages::auth.reset-password'));
-        Fortify::requestPasswordResetLinkView(fn () => view('pages::auth.forgot-password'));
+        Fortify::loginView(fn() => view('pages::auth.login'));
+        Fortify::verifyEmailView(fn() => view('pages::auth.verify-email'));
+        Fortify::twoFactorChallengeView(fn() => view('pages::auth.two-factor-challenge'));
+        Fortify::confirmPasswordView(fn() => view('pages::auth.confirm-password'));
+        Fortify::registerView(fn() => view('pages::auth.register'));
+        Fortify::resetPasswordView(fn() => view('pages::auth.reset-password'));
+        Fortify::requestPasswordResetLinkView(fn() => view('pages::auth.forgot-password'));
     }
 
     /**
@@ -64,7 +78,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())) . '|' . $request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });
