@@ -2,45 +2,198 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, SoftDeletes;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $table = 'users';
+    protected $primaryKey = 'id';
+
+    protected $fillable = [
+        'uuid',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'phone_number',
+        'email',
+        'password',
+        'role_id',
+        'status', // active, inactive
+        'email_verified_at',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
+
+    protected static function boot()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        parent::boot();
+
+        static::creating(function ($user) {
+            if (empty($user->uuid)) {
+                $user->uuid = (string) Str::uuid();
+            }
+        });
     }
 
     /**
-     * Get the user's initials
+     * Get the user's full name.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . ($this->middle_name ? $this->middle_name . ' ' : '') . $this->last_name);
+    }
+
+    /**
+     * Get user's initials.
      */
     public function initials(): string
     {
-        return Str::of($this->name)
+        return Str::of($this->first_name)
             ->explode(' ')
-            ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Check if user is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    /**
+     * Role check methods.
+     */
+    public function hasRole(string $roleName): bool
+    {
+        return $this->role && $this->role->role_name === $roleName;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function isDispatcher(): bool
+    {
+        return $this->hasRole('dispatcher');
+    }
+
+    public function isDriver(): bool
+    {
+        return $this->hasRole('driver');
+    }
+
+    public function isClient(): bool
+    {
+        return $this->hasRole('client');
+    }
+
+    /**
+     * Client-specific methods.
+     */
+    public function canCreateDeliveryRequest(): bool
+    {
+        return $this->isClient() || $this->isDispatcher() || $this->isAdmin();
+    }
+
+    public function getClientFullAddress(): string
+    {
+        return trim($this->address . ', ' . $this->city . ', ' . $this->state . ' ' . $this->postal_code);
+    }
+
+    /**
+     * Scopes.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeByRole($query, string $roleName)
+    {
+        return $query->whereHas('role', function ($q) use ($roleName) {
+            $q->where('role_name', $roleName);
+        });
+    }
+
+    public function scopeClients($query)
+    {
+        return $query->byRole('client');
+    }
+
+    public function scopeDrivers($query)
+    {
+        return $query->byRole('driver');
+    }
+
+    public function scopeDispatchers($query)
+    {
+        return $query->byRole('dispatcher');
+    }
+
+    public function scopeAdmins($query)
+    {
+        return $query->byRole('admin');
+    }
+
+    /**
+     * Relationships.
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function driver()
+    {
+        return $this->hasOne(Driver::class);
+    }
+
+    public function deliveryRequests()
+    {
+        return $this->hasMany(DeliveryRequest::class, 'requested_by');
+    }
+
+    public function maintenanceRequests()
+    {
+        return $this->hasMany(Maintenance::class, 'reported_by');
+    }
+
+    public function completedMaintenance()
+    {
+        return $this->hasMany(Maintenance::class, 'completed_by');
+    }
+
+    public function dispatchSessions()
+    {
+        return $this->hasMany(DispatchSession::class, 'executed_by');
+    }
+
+    public function truckAssignments()
+    {
+        return $this->hasMany(TruckAssignment::class, 'assigned_by');
     }
 }
