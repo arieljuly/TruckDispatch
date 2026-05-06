@@ -15,35 +15,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * Typically, users are redirected here after authentication.
      */
-    public const HOME = '/login';
-
-    /**
-     * Get the path that users should be redirected to after login based on their role.
-     */
-    public static function home(): string
-    {
-        if (auth()->check()) {
-            $user = auth()->user();
-
-            if ($user->isAdmin()) {
-                return '/admin/dashboard';
-            }
-
-            if ($user->isDispatcher()) {
-                return '/dispatcher/dashboard';
-            }
-
-            if ($user->isDriver()) {
-                return '/driver/dashboard';
-            }
-
-            if ($user->isClient()) {
-                return '/client/dashboard';
-            }
-        }
-
-        return self::HOME;
-    }
+    public const HOME = '/dashboard';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
