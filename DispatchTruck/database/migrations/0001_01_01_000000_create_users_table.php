@@ -5,7 +5,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-
     public function up(): void
     {
         // ✅ Roles Table
@@ -16,17 +15,53 @@ return new class extends Migration {
             $table->timestamps();
         });
 
+        // Insert default roles
+        DB::table('roles')->insert([
+            [
+                'role_name' => 'admin',
+                'description' => 'Full system access',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'role_name' => 'dispatcher',
+                'description' => 'Create assignments and run dispatch algorithm',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'role_name' => 'driver',
+                'description' => 'Truck driver - view assignments and update status',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'role_name' => 'client',
+                'description' => 'External client - create and track delivery requests',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
         // ✅ Users Table
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique()->index();
             $table->string('first_name');
-            $table->string('middle_name')->nullable(); // optional
+            $table->string('middle_name')->nullable();
             $table->string('last_name');
             $table->string('phone_number');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable(); // FIXED
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // Client specific fields
+            $table->string('company_name')->nullable(); // For business clients
+            $table->string('address')->nullable();
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('postal_code')->nullable();
+            $table->string('preferred_contact_method')->default('email'); // email, phone, both
 
             // 🔥 Role relationship
             $table->foreignId('role_id')
@@ -38,10 +73,14 @@ return new class extends Migration {
 
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
 
             // Indexes
             $table->index(['email', 'email_verified_at']);
             $table->index(['created_at', 'updated_at']);
+            $table->index('company_name');
+            $table->index('city');
+            $table->index('status');
         });
 
         // ✅ Password Reset Tokens

@@ -1,5 +1,5 @@
 @extends('layouts.app')
 
 @section('content')
-    @livewire('truck-dispatch')
+    @livewire('landing-page')
 @endsection

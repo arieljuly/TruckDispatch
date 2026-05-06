@@ -26,8 +26,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role_id',
-        'status', // active, inactive
+        'status',
         'email_verified_at',
+        'company_name',
+        'address',
+        'city',
+        'state',
+        'postal_code',
+        'preferred_contact_method',
     ];
 
     protected $hidden = [

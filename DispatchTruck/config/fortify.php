@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => App\Providers\RouteServiceProvider::class . '@home',
 
     /*
     |--------------------------------------------------------------------------
