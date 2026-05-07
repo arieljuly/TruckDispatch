@@ -9,13 +9,13 @@
 <body class="min-h-screen bg-gray-50">
     @auth
         @if(auth()->user()->isAdmin())
-            <x-sidebar.admin-sidebar />
+            <livewire:sidebar.admin-sidebar />
         @elseif(auth()->user()->isDispatcher())
-            <x-sidebar.dispatcher-sidebar />
+            <livewire:sidebar.dispatcher-sidebar />
         @elseif(auth()->user()->isDriver())
-            <x-sidebar.driver-sidebar />
+            <livewire:sidebar.driver-sidebar />
         @elseif(auth()->user()->isClient())
-            <x-sidebar.client-sidebar />
+            <livewire:sidebar.client-sidebar />
         @endif
     @endauth
 

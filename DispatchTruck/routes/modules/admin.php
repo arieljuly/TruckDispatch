@@ -1,6 +1,21 @@
 <?php
 
 use App\Livewire\Dashboard\AdminDashboard;
+use App\Livewire\Admin\UserManagement\UserShow;
+use App\Livewire\Admin\UserManagement\UserCreate;
+use App\Livewire\Admin\UserManagement\UserEdit;
+use App\Livewire\TruckLogs\TruckLogShow;
+use App\Livewire\TruckManagement\TruckShow;
+use App\Livewire\TruckManagement\TruckCreate;
+use App\Livewire\TruckManagement\TruckEdit;
+use App\Livewire\Maintenance\MaintenanceShow;
+use App\Livewire\Maintenance\MaintenanceCreate;
+use App\Livewire\Maintenance\MaintenanceEdit;
+use App\Livewire\DeliveryRequest\RequestDelivery;
+use App\Livewire\DriverManagement\DriverShow;
+use App\Livewire\AreaManagement\AreaShow;
+use App\Livewire\Reports\Reports;
+use App\Livewire\Notifications\NotificationList;
 use Illuminate\Support\Facades\Route;
 
 // Admin routes
@@ -9,19 +24,51 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', AdminDashboard::class)->name('dashboard');
 
     // User Management
-    Route::get('/users', function () {
-        return view('pages.admin.users');
-    })->name('users');
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', UserShow::class)->name('index');
+        Route::get('/create', UserCreate::class)->name('create');
+        Route::get('/{id}/edit', UserEdit::class)->name('edit');
 
-    // Fleet Management
-    Route::get('/fleets', function () {
-        return view('pages.admin.fleets');
-    })->name('fleets');
+        //for the driver
+        Route::get('/drivers', DriverShow::class)->name('drivers');
+
+        //for the area
+        Route::get('/areas', AreaShow::class)->name('areas');
+    });
+
+    // Truck Management
+    Route::prefix('trucks')->name('trucks.')->group(function () {
+        Route::get('/', TruckShow::class)->name('index');
+        Route::get('/create', TruckCreate::class)->name('create');
+        Route::get('/{id}/edit', TruckEdit::class)->name('edit');
+    });
+
+    // Maintenance
+    Route::prefix('maintenance')->name('maintenance.')->group(function () {
+        Route::get('/', MaintenanceShow::class)->name('index');
+        Route::get('/create', MaintenanceCreate::class)->name('create');
+        Route::get('/{id}/edit', MaintenanceEdit::class)->name('edit');
+    });
+
+    // Truck Logs
+    Route::prefix('truck-logs')->name('truck-logs.')->group(function () {
+        Route::get('/', TruckLogShow::class)->name('index');
+
+    });
+
+    //Dispatch Management
+    Route::prefix('dispatch')->name('dispatch.')->group(function () {
+        Route::get('/', TruckLogShow::class)->name('index');
+    });
+    //Delivery Requests
+    Route::prefix('delivery-requests')->name('delivery-requests.')->group(function () {
+        Route::get('/', RequestDelivery::class)->name('index');
+    });
 
     // Reports
-    Route::get('/reports', function () {
-        return view('pages.admin.reports');
-    })->name('reports');
+    Route::get('/reports', Reports::class)->name('reports');
+
+    Route::get('/notifications', NotificationList::class)->name('notifications');   
 
     // Settings
     Route::get('/settings', function () {

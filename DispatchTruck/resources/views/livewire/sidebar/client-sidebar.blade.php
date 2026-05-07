@@ -1,16 +1,11 @@
-{{-- resources/views/components/sidebar/client-sidebar.blade.php --}}
-<aside
+<div>
+    <aside
     class="sidebar fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full lg:translate-x-0 bg-white border-r border-gray-200">
     <div class="h-full flex flex-col">
         <!-- Logo -->
         <div class="flex items-center justify-between p-4 border-b border-gray-200">
-            <a href="{{ route('dashboard') }}" class="flex items-center space-x-2" wire:navigate>
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 18L12 15L8 12M16 18L12 15M12 3L4 9L12 15L20 9L12 3Z" />
-                    </svg>
-                </div>
+            <a href="{{ route('client.dashboard') }}" class="flex items-center space-x-2" wire:navigate>
+                <image src="{{ asset('assets/images/logo.png') }}" alt="Truck Icon" class="w-10 h-7">
                 <span class="text-xl font-bold text-gray-900">TruckDispatch</span>
             </a>
             <button id="closeSidebar"
@@ -107,3 +102,4 @@
         });
     }
 </script>
+</div>
