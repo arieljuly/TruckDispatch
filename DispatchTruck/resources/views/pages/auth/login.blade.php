@@ -94,9 +94,11 @@
     </div>
 
     <script>
+    document.addEventListener('DOMContentLoaded', function() {
         // Toggle password visibility
         document.querySelectorAll('.toggle-password').forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
                 const input = this.parentElement.querySelector('input');
                 if (!input) return;
                 const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -117,12 +119,22 @@
         const submitBtn = document.getElementById('submitBtn');
 
         if (form) {
-            form.addEventListener('submit', function () {
+            form.addEventListener('submit', function(e) {
+                // Don't prevent default - let the form submit normally
                 if (submitBtn) {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = 'Logging in...';
                 }
             });
         }
-    </script>
+    });
+
+    // Handle back button navigation for authenticated users
+    window.addEventListener('pageshow', function(event) {
+        // Check if this is a back/forward navigation
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+</script>
 @endsection

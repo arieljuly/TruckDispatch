@@ -15,30 +15,32 @@ class RouteServiceProvider extends ServiceProvider
      *
      * Typically, users are redirected here after authentication.
      */
-    public const HOME = '/dashboard';
+    public const HOME = '/dashboard'; // Make sure this is a string path
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
      */
     public function boot(): void
     {
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
+        $this->configureRateLimiting();
 
         $this->routes(function () {
-            // Load API routes only if the file exists
-            if (file_exists(base_path('routes/api.php'))) {
-                Route::middleware('api')
-                    ->prefix('api')
-                    ->group(base_path('routes/api.php'));
-            }
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
 
-            // Load web routes (always exists)
-            if (file_exists(base_path('routes/web.php'))) {
-                Route::middleware('web')
-                    ->group(base_path('routes/web.php'));
-            }
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+        });
+    }
+
+    /**
+     * Configure the rate limiters for the application.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
     }
 }

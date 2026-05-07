@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => App\Providers\RouteServiceProvider::class . '@home',
+    'home' => env('FORTIFY_HOME', '/dashboard'),
 
     /*
     |--------------------------------------------------------------------------
