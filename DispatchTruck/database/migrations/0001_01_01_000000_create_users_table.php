@@ -58,10 +58,6 @@ return new class extends Migration {
             // Client specific fields
             $table->string('company_name')->nullable(); // For business clients
             $table->string('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('state')->nullable();
-            $table->string('postal_code')->nullable();
-            $table->string('preferred_contact_method')->default('email'); // email, phone, both
 
             // 🔥 Role relationship
             $table->foreignId('role_id')

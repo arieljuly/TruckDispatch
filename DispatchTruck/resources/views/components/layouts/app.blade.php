@@ -4,6 +4,8 @@
 <head>
     @include('partials.head')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="min-h-screen bg-gray-50">
@@ -102,7 +104,7 @@
         <div class="pt-16 lg:pt-0">
             {{ $slot }}
         </div>
-    </main>
+    </main> 
 
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
@@ -167,7 +169,6 @@
             }, 5000);
         };
     </script>
-
     @stack('scripts')
 </body>
 

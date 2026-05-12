@@ -2,7 +2,6 @@
 
 use App\Livewire\Dashboard\AdminDashboard;
 use App\Livewire\Admin\UserManagement\UserShow;
-use App\Livewire\Admin\UserManagement\UserCreate;
 use App\Livewire\Admin\UserManagement\UserEdit;
 use App\Livewire\TruckLogs\TruckLogShow;
 use App\Livewire\TruckManagement\TruckShow;
@@ -26,9 +25,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // User Management
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', UserShow::class)->name('index');
-        Route::get('/create', UserCreate::class)->name('create');
-        Route::get('/{id}/edit', UserEdit::class)->name('edit');
-
+        
         //for the driver
         Route::get('/drivers', DriverShow::class)->name('drivers');
 
@@ -68,7 +65,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Reports
     Route::get('/reports', Reports::class)->name('reports');
 
-    Route::get('/notifications', NotificationList::class)->name('notifications');   
+    Route::get('/notifications', NotificationList::class)->name('notifications');
 
     // Settings
     Route::get('/settings', function () {

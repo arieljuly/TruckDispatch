@@ -6,7 +6,8 @@
             <div class="flex items-center justify-between p-4 border-b border-white/10">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-2" wire:navigate>
                     <div class="w-10 h-10 rounded-lg bg-white p-1.5 flex items-center justify-center">
-                        <img src="{{ asset('assets/images/logo.png') }}" alt="Truck Icon" class="w-8 h-8 object-contain">
+                        <img src="{{ asset('assets/images/logo.png') }}" alt="Truck Icon"
+                            class="w-8 h-8 object-contain">
                     </div>
                     <span class="text-xl font-bold text-white">TruckDispatch</span>
                 </a>
@@ -42,8 +43,8 @@
                         <a href="{{ route('admin.delivery-requests.index') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.delivery-requests*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                 class="w-5 h-5 mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="w-5 h-5 mr-3">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                             </svg>
@@ -54,12 +55,11 @@
                         <a href="{{ route('admin.dispatch.index') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.dispatch*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                class="w-5 h-5 mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="w-5 h-5 mr-3">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
                             </svg>
-
                             {{ __('Dispatch Management') }}
                         </a>
 
@@ -172,12 +172,11 @@
                         <a href="{{ route('admin.reports') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.reports') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                class="w-5 h-5 mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="w-5 h-5 mr-3">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25M9 16.5v.75m3-3v3M15 12v5.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                             </svg>
-
                             {{ __('Reports') }}
                         </a>
 
@@ -216,7 +215,7 @@
                     </svg>
                 </button>
 
-                <!-- Dropdown Menu - Now positioned correctly -->
+                <!-- Dropdown Menu -->
                 <div x-show="open" x-cloak @click.away="open = false"
                     class="absolute bottom-20 left-4 right-4 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
                     <div class="py-1">
@@ -231,7 +230,7 @@
                             {{ __('Settings') }}
                         </a>
                         <div class="border-t border-gray-100"></div>
-                        <button id="logoutButtonSidebar"
+                        <button onclick="confirmLogout()"
                             class="flex items-center w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
                             <svg class="w-5 h-5 mr-3 text-red-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
@@ -275,29 +274,12 @@
             background: rgba(255, 255, 255, 0.3);
         }
     </style>
-
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="//unpkg.com/alpinejs" defer></script>
-
+    
     <script>
-        // Close sidebar functionality
-        const closeSidebar = document.getElementById('closeSidebar');
-        const sidebar = document.querySelector('.sidebar');
-
-        if (closeSidebar && sidebar) {
-            closeSidebar.addEventListener('click', () => {
-                sidebar.classList.add('-translate-x-full');
-            });
-        }
-
-        // Logout functionality with SweetAlert
-        const logoutBtn = document.getElementById('logoutButtonSidebar');
-
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
+        // Check if functions are already defined to prevent duplicate declarations
+        if (typeof window.confirmLogout === 'undefined') {
+            window.confirmLogout = function () {
                 Swal.fire({
                     title: 'Are you sure?',
                     text: "You are about to log out of your account!",
@@ -318,12 +300,55 @@
                             allowOutsideClick: false,
                             didOpen: () => {
                                 Swal.showLoading();
-                                // Submit the logout form
                                 document.getElementById('logout-form').submit();
                             }
                         });
                     }
                 });
+            }
+        }
+
+        // Initialize sidebar functionality only once
+        if (typeof window.sidebarInitialized === 'undefined') {
+            window.sidebarInitialized = true;
+
+            // Use DOMContentLoaded to ensure DOM is ready
+            document.addEventListener('DOMContentLoaded', function () {
+                const closeSidebar = document.getElementById('closeSidebar');
+                const sidebar = document.querySelector('.sidebar');
+
+                if (closeSidebar && sidebar) {
+                    // Remove any existing event listeners to prevent duplicates
+                    const newCloseSidebar = closeSidebar.cloneNode(true);
+                    closeSidebar.parentNode.replaceChild(newCloseSidebar, closeSidebar);
+
+                    newCloseSidebar.addEventListener('click', () => {
+                        sidebar.classList.add('-translate-x-full');
+                    });
+                }
+            });
+        }
+
+        // Re-attach any Livewire-specific listeners if needed (only once)
+        if (typeof window.livewireNavigated === 'undefined') {
+            window.livewireNavigated = true;
+
+            document.addEventListener('livewire:navigated', () => {
+                // Re-initialize sidebar after navigation without creating duplicates
+                const closeSidebar = document.getElementById('closeSidebar');
+                const sidebar = document.querySelector('.sidebar');
+
+                if (closeSidebar && sidebar) {
+                    // Remove existing listeners by cloning
+                    const newCloseSidebar = closeSidebar.cloneNode(true);
+                    if (closeSidebar.parentNode) {
+                        closeSidebar.parentNode.replaceChild(newCloseSidebar, closeSidebar);
+                    }
+
+                    newCloseSidebar.addEventListener('click', () => {
+                        sidebar.classList.add('-translate-x-full');
+                    });
+                }
             });
         }
     </script>
