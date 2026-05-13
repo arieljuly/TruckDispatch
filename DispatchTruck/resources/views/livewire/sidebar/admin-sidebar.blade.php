@@ -126,8 +126,8 @@
                         </a>
 
                         <!-- Driver Management Button -->
-                        <a href="{{ route('admin.users.drivers') }}"
-                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users.drivers') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                        <a href="{{ route('admin.drivers.index') }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.drivers*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
                             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -136,7 +136,6 @@
                             </svg>
                             {{ __('Driver Management') }}
                         </a>
-
                         <!-- Area Management Button (Direct link, no dropdown) -->
                         <a href="{{ route('admin.areas.index') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.areas*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"

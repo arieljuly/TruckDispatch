@@ -5,14 +5,17 @@ use App\Livewire\Dashboard\AdminDashboard;
 use App\Livewire\Admin\UserManagement\UserShow;
 use App\Livewire\Admin\UserManagement\UserEdit;
 use App\Livewire\TruckLogs\TruckLogShow;
-use App\Livewire\TruckManagement\TruckShow;
+use App\Livewire\TruckManagement\TruckList; 
 use App\Livewire\TruckManagement\TruckCreate;
 use App\Livewire\TruckManagement\TruckEdit;
+use App\Livewire\TruckManagement\TruckShow;
 use App\Livewire\Maintenance\MaintenanceShow;
 use App\Livewire\Maintenance\MaintenanceCreate;
 use App\Livewire\Maintenance\MaintenanceEdit;
 use App\Livewire\DeliveryRequest\RequestDelivery;
 use App\Livewire\DriverManagement\DriverShow;
+use App\Livewire\DriverManagement\DriverList;
+use App\Livewire\DriverManagement\DriverEdit;
 use App\Livewire\AreaManagement\AreaShow;
 use App\Livewire\AreaManagement\AreaCreate;
 use App\Livewire\AreaManagement\AreaEdit;
@@ -29,11 +32,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // User Management
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', UserShow::class)->name('index');
-
-        //for the driver
-        Route::get('/drivers', DriverShow::class)->name('drivers');
     });
 
+    // Driver Managemnt
+    Route::prefix('drivers')->name('drivers.')->group(function () {
+        Route::get('/', DriverList::class)->name('index');
+        Route::get('/{id}', DriverShow::class)->name('show');
+        Route::get('/{id}/edit', DriverEdit::class)->name('edit');
+
+    });
     // Area Management
     Route::prefix('areas')->name('areas.')->group(function () {
         Route::get('/', AreaList::class)->name('index');
@@ -45,9 +52,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Truck Management
     Route::prefix('trucks')->name('trucks.')->group(function () {
-        Route::get('/', TruckShow::class)->name('index');
+        Route::get('/', TruckList::class)->name('index');  
         Route::get('/create', TruckCreate::class)->name('create');
         Route::get('/{id}/edit', TruckEdit::class)->name('edit');
+        Route::get('/{id}', TruckShow::class)->name('show');  
     });
 
     // Maintenance
@@ -60,13 +68,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Truck Logs
     Route::prefix('truck-logs')->name('truck-logs.')->group(function () {
         Route::get('/', TruckLogShow::class)->name('index');
-
     });
 
     //Dispatch Management
     Route::prefix('dispatch')->name('dispatch.')->group(function () {
         Route::get('/', TruckLogShow::class)->name('index');
     });
+
     //Delivery Requests
     Route::prefix('delivery-requests')->name('delivery-requests.')->group(function () {
         Route::get('/', RequestDelivery::class)->name('index');

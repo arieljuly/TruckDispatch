@@ -1,236 +1,169 @@
-<div>
-    <div class="container-fluid">
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <h2>Truck Management</h2>
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Truck Details</h1>
+                <p class="mt-1 text-sm text-gray-600">View truck information and assignment history</p>
             </div>
-            <div class="col-md-6 text-end">
-                <button class="btn btn-primary" wire:click="openCreateModal">
-                    <i class="fas fa-plus"></i> Add New Truck
-                </button>
-            </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <input type="text" class="form-control" placeholder="Search by name or plate..." wire:model.live.debounce.300ms="search">
-            </div>
-            <div class="col-md-3">
-                <select class="form-control" wire:model.live="statusFilter">
-                    <option value="">All Status</option>
-                    <option value="available">Available</option>
-                    <option value="in-transit">In Transit</option>
-                    <option value="maintenance">Maintenance</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select class="form-control" wire:model.live="perPage">
-                    <option value="10">10 per page</option>
-                    <option value="25">25 per page</option>
-                    <option value="50">50 per page</option>
-                </select>
+            <div class="mt-4 sm:mt-0 flex gap-3">
+                <a href="{{ route('admin.trucks.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to List
+                </a>
+                <a href="{{ route('admin.trucks.edit', $truck->id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edit Truck
+                </a>
             </div>
         </div>
 
-        <!-- Messages -->
         @if (session()->has('message'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('message') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="mb-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
+                <p class="text-sm text-green-700">{{ session('message') }}</p>
             </div>
         @endif
 
-        @if (session()->has('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        <!-- Trucks Table -->
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Truck Name</th>
-                        <th>Plate Number</th>
-                        <th>Capacity (L)</th>
-                        <th>Available (L)</th>
-                        <th>Current Area</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($trucks as $truck)
-                        <tr>
-                            <td>{{ $truck->id }}</td>
-                            <td>{{ $truck->truck_name }}</td>
-                            <td>{{ $truck->plate_number }}</td>
-                            <td>{{ number_format($truck->capacity_ltrs, 2) }}</td>
-                            <td>{{ number_format($truck->available_ltrs, 2) }}</td>
-                            <td>{{ $truck->currentArea->area_name ?? 'N/A' }}</td>
-                            <td>
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Truck Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-lg font-medium text-gray-900">Truck Information</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div class="border-b pb-3">
+                            <label class="text-sm font-medium text-gray-500">Truck Name</label>
+                            <p class="mt-1 text-gray-900 font-semibold">{{ $truck->truck_name }}</p>
+                        </div>
+                        <div class="border-b pb-3">
+                            <label class="text-sm font-medium text-gray-500">Plate Number</label>
+                            <p class="mt-1 text-gray-900">{{ $truck->plate_number }}</p>
+                        </div>
+                        <div class="border-b pb-3">
+                            <label class="text-sm font-medium text-gray-500">Capacity</label>
+                            <p class="mt-1 text-gray-900">{{ number_format($truck->capacity_ltrs, 2) }} Liters</p>
+                        </div>
+                        <div class="border-b pb-3">
+                            <label class="text-sm font-medium text-gray-500">Available Liters</label>
+                            <p class="mt-1 text-gray-900">{{ number_format($truck->available_ltrs, 2) }} Liters</p>
+                        </div>
+                        <div class="border-b pb-3">
+                            <label class="text-sm font-medium text-gray-500">Current Location</label>
+                            <p class="mt-1 text-gray-900">{{ $truck->currentArea->area_name ?? 'Not assigned' }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Status</label>
+                            <div class="mt-1">
                                 @php
-                                    $statusClass = [
-                                        'available' => 'success',
-                                        'in-transit' => 'warning',
-                                        'maintenance' => 'danger'
-                                    ][$truck->status] ?? 'secondary';
+                                    $statusColors = [
+                                        'available' => 'bg-green-100 text-green-800',
+                                        'in-transit' => 'bg-blue-100 text-blue-800',
+                                        'maintenance' => 'bg-red-100 text-red-800',
+                                    ];
                                 @endphp
-                                <span class="badge bg-{{ $statusClass }}">
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ $statusColors[$truck->status] ?? 'bg-gray-100' }}">
                                     {{ ucfirst($truck->status) }}
                                 </span>
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-info" wire:click="openViewModal({{ $truck->id }})" title="View">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-primary" wire:click="openEditModal({{ $truck->id }})" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" wire:click="openDeleteModal({{ $truck->id }})" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center">No trucks found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="d-flex justify-content-center">
-            {{ $trucks->links() }}
-        </div>
-    </div>
-
-    <!-- Create Modal -->
-    @if($showCreateModal)
-        @include('livewire.truck-management.truck-create')
-    @endif
-
-    <!-- Edit Modal -->
-    @if($showEditModal)
-        @include('livewire.truck-management.truck-edit')
-    @endif
-
-    <!-- View Modal - Fixed with null check -->
-    @if($showViewModal && $viewingTruck)
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Truck Details</h5>
-                        <button type="button" class="btn-close" wire:click="$set('showViewModal', false)"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Truck Name:</label>
-                                <p>{{ $viewingTruck->truck_name }}</p>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Plate Number:</label>
-                                <p>{{ $viewingTruck->plate_number }}</p>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Capacity:</label>
-                                <p>{{ number_format($viewingTruck->capacity_ltrs, 2) }} Liters</p>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Available Liters:</label>
-                                <p>{{ number_format($viewingTruck->available_ltrs, 2) }} Liters</p>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Utilization:</label>
-                                <p>{{ number_format(($viewingTruck->available_ltrs / $viewingTruck->capacity_ltrs) * 100, 1) }}%</p>
-                                <div class="progress">
-                                    <div class="progress-bar" role="progressbar" 
-                                         style="width: {{ ($viewingTruck->available_ltrs / $viewingTruck->capacity_ltrs) * 100 }}%">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Current Area:</label>
-                                <p>{{ $viewingTruck->currentArea->area_name ?? 'Not Assigned' }}</p>
-                                @if($viewingTruck->currentArea)
-                                    <small class="text-muted">
-                                        Required: {{ number_format($viewingTruck->currentArea->required_liters, 2) }} L
-                                    </small>
-                                @endif
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="fw-bold">Status:</label>
-                                <p>
-                                    @php
-                                        $statusClass = [
-                                            'available' => 'success',
-                                            'in-transit' => 'warning',
-                                            'maintenance' => 'danger'
-                                        ][$viewingTruck->status] ?? 'secondary';
-                                    @endphp
-                                    <span class="badge bg-{{ $statusClass }}">
-                                        {{ ucfirst($viewingTruck->status) }}
-                                    </span>
-                                </p>
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="fw-bold">System Information:</label>
-                                <table class="table table-sm table-bordered mt-2">
-                                    <tr>
-                                        <th width="30%">Created At:</th>
-                                        <td>{{ $viewingTruck->created_at ? $viewingTruck->created_at->format('F d, Y h:i A') : 'N/A' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Last Updated:</th>
-                                        <td>{{ $viewingTruck->updated_at ? $viewingTruck->updated_at->format('F d, Y h:i A') : 'N/A' }}</td>
-                                    </tr>
-                                </table>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
-                    </div>
                 </div>
             </div>
-        </div>
-    @endif
 
-    <!-- Delete Modal -->
-    @if($showDeleteModal)
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirm Delete</h5>
-                        <button type="button" class="btn-close" wire:click="$set('showDeleteModal', false)"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Are you sure you want to delete truck <strong>{{ $deletingTruckName }}</strong>?</p>
-                        <p class="text-danger">This action cannot be undone.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="$set('showDeleteModal', false)">Cancel</button>
-                        <button type="button" class="btn btn-danger" wire:click="deleteTruck">Delete Truck</button>
-                    </div>
+            <!-- Current Assignment -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-lg font-medium text-gray-900">Current Assignment</h3>
+                </div>
+                <div class="p-6">
+                    @if($truck->currentAssignment)
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Driver:</span>
+                                <span class="text-gray-900">{{ $truck->currentAssignment->driver->user->name ?? 'N/A' }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">License:</span>
+                                <span class="text-gray-900">{{ $truck->currentAssignment->driver->license_number ?? 'N/A' }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Started:</span>
+                                <span class="text-gray-900">{{ $truck->currentAssignment->start_time->format('M d, Y H:i') }}</span>
+                            </div>
+                            <div class="pt-3">
+                                <button onclick="endAssignment({{ $truck->currentAssignment->id }})" class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                                    End Assignment
+                                </button>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-gray-500 text-center py-4">No active driver assignment</p>
+                    @endif
                 </div>
             </div>
         </div>
-    @endif
+
+        <!-- Assignment History -->
+        <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-medium text-gray-900">Assignment History</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Driver</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Start Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">End Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @forelse($assignments as $assignment)
+                            <tr>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $assignment->driver->user->name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $assignment->start_time->format('M d, Y H:i') }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $assignment->end_time ? $assignment->end_time->format('M d, Y H:i') : 'Active' }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $assignment->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ ucfirst($assignment->status) }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">No assignment history</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function endAssignment(assignmentId) {
+        Swal.fire({
+            title: 'End Assignment?',
+            text: "This will mark the assignment as completed",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, end it!',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                @this.call('endAssignment', assignmentId);
+            }
+        });
+    }
+</script>
