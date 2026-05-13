@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\AreaManagement\AreaList;
 use App\Livewire\Dashboard\AdminDashboard;
 use App\Livewire\Admin\UserManagement\UserShow;
 use App\Livewire\Admin\UserManagement\UserEdit;
@@ -13,6 +14,9 @@ use App\Livewire\Maintenance\MaintenanceEdit;
 use App\Livewire\DeliveryRequest\RequestDelivery;
 use App\Livewire\DriverManagement\DriverShow;
 use App\Livewire\AreaManagement\AreaShow;
+use App\Livewire\AreaManagement\AreaCreate;
+use App\Livewire\AreaManagement\AreaEdit;
+use App\Livewire\AreaManagement\AreaDemand;
 use App\Livewire\Reports\Reports;
 use App\Livewire\Notifications\NotificationList;
 use Illuminate\Support\Facades\Route;
@@ -25,12 +29,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // User Management
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', UserShow::class)->name('index');
-        
+
         //for the driver
         Route::get('/drivers', DriverShow::class)->name('drivers');
+    });
 
-        //for the area
-        Route::get('/areas', AreaShow::class)->name('areas');
+    // Area Management
+    Route::prefix('areas')->name('areas.')->group(function () {
+        Route::get('/', AreaList::class)->name('index');
+        Route::get('/create', AreaCreate::class)->name('create');
+        Route::get('/{id}/edit', AreaEdit::class)->name('edit');
+        Route::get('/{id}', AreaShow::class)->name('show');
+        Route::get('/demand/summary', AreaDemand::class)->name('demand');
     });
 
     // Truck Management

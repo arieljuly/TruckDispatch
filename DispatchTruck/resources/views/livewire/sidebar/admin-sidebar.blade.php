@@ -27,7 +27,7 @@
                         {{ __('Admin Portal') }}
                     </h3>
                     <div class="mt-2 space-y-1">
-                        <!-- Dashboard -->
+                        <!-- Dashboard Button -->
                         <a href="{{ route('admin.dashboard') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.dashboard') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
@@ -39,7 +39,7 @@
                             {{ __('Dashboard') }}
                         </a>
 
-                        <!-- Delivery Request -->
+                        <!-- Delivery Request Button -->
                         <a href="{{ route('admin.delivery-requests.index') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.delivery-requests*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
@@ -51,7 +51,7 @@
                             {{ __('Delivery Request') }}
                         </a>
 
-                        <!-- Dispatch Management -->
+                        <!-- Dispatch Management Button -->
                         <a href="{{ route('admin.dispatch.index') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.dispatch*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
@@ -63,112 +63,93 @@
                             {{ __('Dispatch Management') }}
                         </a>
 
-                        <!-- Fleet Management Dropdown -->
-                        <div x-data="{ open: {{ request()->routeIs('admin.trucks*') || request()->routeIs('admin.maintenance*') || request()->routeIs('admin.truck-logs*') ? 'true' : 'false' }} }"
-                            class="relative">
-                            <button @click="open = !open"
-                                class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks*') || request()->routeIs('admin.maintenance*') || request()->routeIs('admin.truck-logs*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                                <div class="flex items-center">
-                                    {{ __('Fleet Management') }}
-                                </div>
-                                <svg class="w-5 h-5 transition-transform duration-200" :class="{ 'rotate-180': open }"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
-
-                            <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 transform -translate-y-2"
-                                x-transition:enter-end="opacity-100 transform translate-y-0"
-                                class="ml-4 mt-1 space-y-1">
-                                <a href="{{ route('admin.trucks.index') }}"
-                                    class="flex items-center px-3 py-2 pl-8 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks*') ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10' }}"
-                                    wire:navigate>
-                                    <svg class="w-5 h-5 mr-3" fill="currentColor" stroke="none" viewBox="0 0 256 256"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M224,96.8V96a56.06,56.06,0,0,0-56-56h-8a16,16,0,0,0-16,16V176H128V72a8,8,0,0,0-8-8H16A16,16,0,0,0,0,80V184a32,32,0,0,0,56,21.13A32,32,0,0,0,111,192h82a32,32,0,0,0,63-8V136A40.07,40.07,0,0,0,224,96.8ZM160,56h8a40,40,0,0,1,40,40v8a8,8,0,0,0,8,8,24,24,0,0,1,24,24v20.31A31.71,31.71,0,0,0,224,152a32.06,32.06,0,0,0-31,24H160ZM112,80v96h-1a32,32,0,0,0-55-13.13,31.9,31.9,0,0,0-40-6.56V80ZM32,200a16,16,0,1,1,16-16A16,16,0,0,1,32,200Zm48,0a16,16,0,1,1,16-16A16,16,0,0,1,80,200Zm144,0a16,16,0,1,1,16-16A16,16,0,0,1,224,200Z">
-                                        </path>
-                                    </svg>
-                                    {{ __('Trucks Management') }}
-                                </a>
-                                <a href="{{ route('admin.maintenance.index') }}"
-                                    class="flex items-center px-3 py-2 pl-8 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.maintenance*') ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10' }}"
-                                    wire:navigate>
-                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                                        </path>
-                                    </svg>
-                                    {{ __('Maintenance') }}
-                                </a>
-                                <a href="{{ route('admin.truck-logs.index') }}"
-                                    class="flex items-center px-3 py-2 pl-8 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.truck-logs*') ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10' }}"
-                                    wire:navigate>
-                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                        </path>
-                                    </svg>
-                                    {{ __('Truck Logs') }}
-                                </a>
-                            </div>
+                        <!-- Fleet Management Section -->
+                        <div class="pt-2">
+                            <h3 class="px-3 text-xs font-semibold text-white/60 uppercase tracking-wider">
+                                {{ __('Fleet Management') }}
+                            </h3>
                         </div>
 
-                        <!-- Administration Dropdown -->
-                        <div x-data="{ open: {{ request()->routeIs('admin.users*') ? 'true' : 'false' }} }"
-                            class="relative">
-                            <button @click="open = !open"
-                                class="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}">
-                                <div class="flex items-center">
-                                    {{ __('Administration') }}
-                                </div>
-                                <svg class="w-5 h-5 transition-transform duration-200" :class="{ 'rotate-180': open }"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
+                        <!-- Trucks Management Button -->
+                        <a href="{{ route('admin.trucks.index') }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                            wire:navigate>
+                            <svg class="w-5 h-5 mr-3" fill="currentColor" stroke="none" viewBox="0 0 256 256">
+                                <path
+                                    d="M224,96.8V96a56.06,56.06,0,0,0-56-56h-8a16,16,0,0,0-16,16V176H128V72a8,8,0,0,0-8-8H16A16,16,0,0,0,0,80V184a32,32,0,0,0,56,21.13A32,32,0,0,0,111,192h82a32,32,0,0,0,63-8V136A40.07,40.07,0,0,0,224,96.8ZM160,56h8a40,40,0,0,1,40,40v8a8,8,0,0,0,8,8,24,24,0,0,1,24,24v20.31A31.71,31.71,0,0,0,224,152a32.06,32.06,0,0,0-31,24H160ZM112,80v96h-1a32,32,0,0,0-55-13.13,31.9,31.9,0,0,0-40-6.56V80ZM32,200a16,16,0,1,1,16-16A16,16,0,0,1,32,200Zm48,0a16,16,0,1,1,16-16A16,16,0,0,1,80,200Zm144,0a16,16,0,1,1,16-16A16,16,0,0,1,224,200Z">
+                                </path>
+                            </svg>
+                            {{ __('Trucks Management') }}
+                        </a>
 
-                            <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 transform -translate-y-2"
-                                x-transition:enter-end="opacity-100 transform translate-y-0"
-                                class="ml-4 mt-1 space-y-1">
-                                <a href="{{ route('admin.users.index') }}"
-                                    class="flex items-center px-3 py-2 pl-8 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users.index') ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10' }}"
-                                    wire:navigate>
-                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z">
-                                        </path>
-                                    </svg>
-                                    {{ __('Users Management') }}
-                                </a>
-                                <a href="{{ route('admin.users.drivers') }}"
-                                    class="flex items-center px-3 py-2 pl-8 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users.drivers') ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10' }}"
-                                    wire:navigate>
-                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                        </path>
-                                    </svg>
-                                    {{ __('Driver Management') }}
-                                </a>
-                                <a href="{{ route('admin.users.areas') }}"
-                                    class="flex items-center px-3 py-2 pl-8 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users.areas') ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white hover:bg-white/10' }}"
-                                    wire:navigate>
-                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
-                                        </path>
-                                    </svg>
-                                    {{ __('Area Management') }}
-                                </a>
-                            </div>
+                        <!-- Maintenance Button -->
+                        <a href="{{ route('admin.maintenance.index') }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.maintenance*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                            wire:navigate>
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                                </path>
+                            </svg>
+                            {{ __('Maintenance') }}
+                        </a>
+
+                        <!-- Truck Logs Button -->
+                        <a href="{{ route('admin.truck-logs.index') }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.truck-logs*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                            wire:navigate>
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            {{ __('Truck Logs') }}
+                        </a>
+
+                        <!-- Administration Section -->
+                        <div class="pt-2">
+                            <h3 class="px-3 text-xs font-semibold text-white/60 uppercase tracking-wider">
+                                {{ __('Administration') }}
+                            </h3>
                         </div>
 
-                        <!-- Reports -->
+                        <!-- Users Management Button -->
+                        <a href="{{ route('admin.users.index') }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users.index') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                            wire:navigate>
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z">
+                                </path>
+                            </svg>
+                            {{ __('Users Management') }}
+                        </a>
+
+                        <!-- Driver Management Button -->
+                        <a href="{{ route('admin.users.drivers') }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.users.drivers') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                            wire:navigate>
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            {{ __('Driver Management') }}
+                        </a>
+
+                        <!-- Area Management Button (Direct link, no dropdown) -->
+                        <a href="{{ route('admin.areas.index') }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.areas*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                            wire:navigate>
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                                </path>
+                            </svg>
+                            {{ __('Area Management') }}
+                        </a>
+
+                        <!-- Reports Button -->
                         <a href="{{ route('admin.reports') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.reports') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
@@ -180,7 +161,7 @@
                             {{ __('Reports') }}
                         </a>
 
-                        <!-- Notifications -->
+                        <!-- Notifications Button -->
                         <a href="{{ route('admin.notifications') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.notifications') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
@@ -196,7 +177,7 @@
                 </div>
             </div>
 
-            <!-- User Profile -->
+            <!-- User Profile Button -->
             <div class="p-4 border-t border-white/10" x-data="{ open: false }">
                 <button @click="open = !open" @click.away="open = false"
                     class="flex items-center space-x-3 w-full hover:bg-white/10 rounded-lg p-2 transition-all duration-200">
@@ -275,9 +256,8 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <script>
-        // Check if functions are already defined to prevent duplicate declarations
         if (typeof window.confirmLogout === 'undefined') {
             window.confirmLogout = function () {
                 Swal.fire({
@@ -308,17 +288,14 @@
             }
         }
 
-        // Initialize sidebar functionality only once
         if (typeof window.sidebarInitialized === 'undefined') {
             window.sidebarInitialized = true;
 
-            // Use DOMContentLoaded to ensure DOM is ready
             document.addEventListener('DOMContentLoaded', function () {
                 const closeSidebar = document.getElementById('closeSidebar');
                 const sidebar = document.querySelector('.sidebar');
 
                 if (closeSidebar && sidebar) {
-                    // Remove any existing event listeners to prevent duplicates
                     const newCloseSidebar = closeSidebar.cloneNode(true);
                     closeSidebar.parentNode.replaceChild(newCloseSidebar, closeSidebar);
 
@@ -329,17 +306,14 @@
             });
         }
 
-        // Re-attach any Livewire-specific listeners if needed (only once)
         if (typeof window.livewireNavigated === 'undefined') {
             window.livewireNavigated = true;
 
             document.addEventListener('livewire:navigated', () => {
-                // Re-initialize sidebar after navigation without creating duplicates
                 const closeSidebar = document.getElementById('closeSidebar');
                 const sidebar = document.querySelector('.sidebar');
 
                 if (closeSidebar && sidebar) {
-                    // Remove existing listeners by cloning
                     const newCloseSidebar = closeSidebar.cloneNode(true);
                     if (closeSidebar.parentNode) {
                         closeSidebar.parentNode.replaceChild(newCloseSidebar, closeSidebar);

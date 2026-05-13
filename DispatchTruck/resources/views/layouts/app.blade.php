@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Truck Dispatch System</title>
     @livewireStyles
+    
 </head>
 <body class="bg-gray-100">
     <div class="min-h-screen bg-white">

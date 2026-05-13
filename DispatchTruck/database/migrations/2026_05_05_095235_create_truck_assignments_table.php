@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('truck_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('truck_id')->constrained()->onDelete('cascade');
-            $table->foreignId('driver_id')->constrained()->onDelete('cascade');
+            $table->foreignId('driver_id')->constrained()->onDelete('cascade')->nullable();
             $table->datetime('start_time');
             $table->datetime('end_time');
             $table->enum('status', ['active', 'completed', 'cancelled'])->default('active');
