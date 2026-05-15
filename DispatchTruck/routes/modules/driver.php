@@ -1,6 +1,9 @@
 <?php
 
 use App\Livewire\Dashboard\DriverDashboard;
+use App\Livewire\Maintenance\Driver\Maintenance;
+use App\Livewire\Notifications\DriverNotificationList;
+use App\Livewire\TruckManagement\AssignedTruck;
 use Illuminate\Support\Facades\Route;
 
 // Driver routes
@@ -8,23 +11,23 @@ Route::middleware(['auth', 'role:driver'])->prefix('driver')->name('driver.')->g
     // Dashboard
     Route::get('/dashboard', DriverDashboard::class)->name('dashboard');
 
-    // Trips Management
-    Route::get('/trips', function () {
-        return view('pages.driver.trips');
-    })->name('trips');
+    //maintenance
+    Route::prefix('maintenance')->name('maintenance.')->group(function () {
+        Route::get('/', Maintenance::class)->name('index');
+    });
 
-    // Documents
-    Route::get('/documents', function () {
-        return view('pages.driver.documents');
-    })->name('documents');
+    //trucks
+    Route::prefix('assigned-trucks')->name('trucks.')->group(function () {
+        Route::get('/', AssignedTruck::class)->name('assigned');
+    });
 
-    // Payments
-    Route::get('/payments', function () {
-        return view('pages.driver.payments');
-    })->name('payments');
+    //notifications
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', DriverNotificationList::class)->name('index');
+    });
 
-    // Messages
-    Route::get('/messages', function () {
-        return view('pages.driver.messages');
-    })->name('messages');
+    // Settings
+    Route::get('/settings', function () {
+        return view('pages.admin.settings');
+    })->name('settings');
 });
