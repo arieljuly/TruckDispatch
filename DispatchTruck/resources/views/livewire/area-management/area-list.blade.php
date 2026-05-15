@@ -33,7 +33,7 @@
                         <div class="-mx-1.5 -my-1.5">
                             <button type="button"
                                 class="inline-flex rounded-md p-1.5 text-green-500 hover:bg-green-100 focus:outline-none"
-                                data-bs-dismiss="alert">
+                                onclick="this.closest('.bg-green-50').remove()">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M6 18L18 6M6 6l12 12"></path>
@@ -92,6 +92,15 @@
                         </select>
                     </div>
                 </div>
+                
+                <!-- Show Inactive Toggle -->
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="flex items-center">
+                        <input type="checkbox" wire:model.live="showInactive" 
+                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <label class="ml-2 text-sm text-gray-600">Show inactive areas</label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -114,19 +123,22 @@
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Coordinates</th>
                             <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status</th>
+                            <th scope="col"
                                 class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($areas as $area)
-                            <tr class="hover:bg-gray-50 transition-colors duration-150">
+                            <tr class="hover:bg-gray-50 transition-colors duration-150 {{ $area->status == 'inactive' ? 'bg-gray-50' : '' }}">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#{{ $area->id + 999 }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div
-                                            class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                            <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor"
+                                            class="flex-shrink-0 h-10 w-10 {{ $area->status == 'active' ? 'bg-indigo-100' : 'bg-gray-200' }} rounded-lg flex items-center justify-center">
+                                            <svg class="h-5 w-5 {{ $area->status == 'active' ? 'text-indigo-600' : 'text-gray-500' }}" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
@@ -137,17 +149,36 @@
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">{{ $area->area_name }}</div>
+                                            @if($area->deleted_at)
+                                                <div class="text-xs text-gray-500">Deleted: {{ $area->deleted_at->format('Y-m-d H:i') }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ number_format($area->required_liters, 2) }} L
-                                    </div>
+                                    <div class="text-sm text-gray-900">{{ number_format($area->required_liters, 2) }} L</div>
                                     <div class="text-xs text-gray-500">fuel required</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ number_format($area->latitude, 6) }}</div>
                                     <div class="text-xs text-gray-500">{{ number_format($area->longitude, 6) }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if($area->status == 'active')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+                                                <circle cx="4" cy="4" r="3"></circle>
+                                            </svg>
+                                            Active
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-red-400" fill="currentColor" viewBox="0 0 8 8">
+                                                <circle cx="4" cy="4" r="3"></circle>
+                                            </svg>
+                                            Inactive
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">
@@ -171,21 +202,33 @@
                                                 </path>
                                             </svg>
                                         </a>
-                                        <button type="button" onclick="confirmDelete({{ $area->id }})"
-                                            class="text-red-600 hover:text-red-900 transition-colors duration-150"
-                                            title="Delete Area">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                        </button>
+                                        @if($area->status == 'active')
+                                            <button type="button" onclick="confirmDeactivate({{ $area->id }})"
+                                                class="text-red-600 hover:text-red-900 transition-colors duration-150"
+                                                title="Deactivate Area">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        @else
+                                            <button type="button" onclick="confirmReactivate({{ $area->id }})"
+                                                class="text-green-600 hover:text-green-900 transition-colors duration-150"
+                                                title="Reactivate Area">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center">
+                                <td colspan="6" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center">
                                         <div class="bg-gray-100 rounded-full p-3 mb-3">
                                             <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
@@ -222,22 +265,22 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    if (typeof window.confirmDelete === 'undefined') {
-        window.confirmDelete = function (areaId) {
+    if (typeof window.confirmDeactivate === 'undefined') {
+        window.confirmDeactivate = function (areaId) {
             Swal.fire({
                 title: 'Are you sure?',
-                text: "You won't be able to revert this!",
+                text: "This area will be deactivated and hidden from active lists!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc2626',
                 cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Yes, delete it!',
+                confirmButtonText: 'Yes, deactivate it!',
                 cancelButtonText: 'Cancel',
                 background: '#ffffff',
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({
-                        title: 'Deleting...',
+                        title: 'Deactivating...',
                         text: 'Please wait',
                         icon: 'info',
                         showConfirmButton: false,
@@ -252,12 +295,52 @@
         }
     }
 
-    // Listen for area deleted event to show success message
+    if (typeof window.confirmReactivate === 'undefined') {
+        window.confirmReactivate = function (areaId) {
+            Swal.fire({
+                title: 'Reactivate Area?',
+                text: "This area will be restored and become active again.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, reactivate it!',
+                cancelButtonText: 'Cancel',
+                background: '#ffffff',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Reactivating...',
+                        text: 'Please wait',
+                        icon: 'info',
+                        showConfirmButton: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                            @this.call('reactivateArea', areaId);
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    // Listen for area events
     document.addEventListener('livewire:initialized', () => {
         Livewire.on('areaDeleted', () => {
             Swal.fire({
-                title: 'Deleted!',
-                text: 'Area has been deleted successfully.',
+                title: 'Deactivated!',
+                text: 'Area has been deactivated successfully.',
+                icon: 'success',
+                confirmButtonColor: '#4f46e5',
+                confirmButtonText: 'OK'
+            });
+        });
+        
+        Livewire.on('areaReactivated', () => {
+            Swal.fire({
+                title: 'Reactivated!',
+                text: 'Area has been reactivated successfully.',
                 icon: 'success',
                 confirmButtonColor: '#4f46e5',
                 confirmButtonText: 'OK'

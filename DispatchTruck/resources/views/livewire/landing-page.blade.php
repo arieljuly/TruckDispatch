@@ -33,7 +33,7 @@
                     class="relative z-30 text-sm font-semibold leading-6 text-gray-900 hover:text-indigo-600 transition-colors">Contact</a>
             </div>
             <div class="flex flex-1 justify-end gap-x-4">
-                <a href="{{ route('register') }}" wire:navigate
+                <a href="{{ route('login') }}" wire:navigate
                     class="relative z-30 rounded-md border-2 border-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all duration-300">
                     {{ __('Get Started') }}
                 </a>

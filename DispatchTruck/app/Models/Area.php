@@ -15,6 +15,7 @@ class Area extends Model
         'required_liters',
         'latitude',
         'longitude',
+        'status',
     ];
 
     protected $casts = [
