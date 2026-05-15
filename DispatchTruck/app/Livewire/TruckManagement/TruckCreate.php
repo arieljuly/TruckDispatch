@@ -4,6 +4,7 @@ namespace App\Livewire\TruckManagement;
 
 use App\Models\Truck;
 use App\Models\Area;
+use App\Models\TruckLog;
 use Livewire\Component;
 
 class TruckCreate extends Component
@@ -30,6 +31,17 @@ class TruckCreate extends Component
         'available_ltrs.min' => 'Available liters must be a positive number.',
         'plate_number.unique' => 'This plate number is already registered.',
     ];
+
+    private function logTruckActivity($truckId, $action, $liters = null, $location = null, $remarks = null)
+    {
+        return TruckLog::create([
+            'truck_id' => $truckId,
+            'action' => $action,
+            'liters' => $liters,
+            'location' => $location,
+            'remarks' => $remarks,
+        ]);
+    }
 
     public function mount()
     {
@@ -64,14 +76,24 @@ class TruckCreate extends Component
 
         $this->validate();
 
-        Truck::create([
+        $truck = Truck::create([
             'truck_name' => $this->truck_name,
             'plate_number' => $this->plate_number,
             'capacity_ltrs' => floatval($this->capacity_ltrs),
             'available_ltrs' => floatval($this->available_ltrs),
             'current_area_id' => $this->current_area_id ?: null,
-            'status' => $this->status, // This will be 'available', 'in-transit', or 'maintenance'
+            'status' => $this->status,
         ]);
+
+        // Log truck creation with area name as location
+        $areaName = $this->current_area_id ? Area::find($this->current_area_id)->area_name : 'Not assigned';
+        $this->logTruckActivity(
+            $truck->id,
+            'created',
+            floatval($this->capacity_ltrs),
+            $areaName, // Location is the area name
+            "New truck registered: {$this->truck_name} | Plate: {$this->plate_number} | Capacity: {$this->capacity_ltrs}L | Available: {$this->available_ltrs}L | Status: {$this->status}"
+        );
 
         session()->flash('message', 'Truck created successfully!');
         return redirect()->route('admin.trucks.index');

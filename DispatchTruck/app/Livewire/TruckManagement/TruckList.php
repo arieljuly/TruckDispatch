@@ -5,6 +5,7 @@ namespace App\Livewire\TruckManagement;
 use App\Models\Truck;
 use App\Models\Driver;
 use App\Models\TruckAssignment;
+use App\Models\TruckLog;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -17,7 +18,7 @@ class TruckList extends Component
     public $perPage = 10;
     public $showAssignModal = false;
     public $selectedTruckId = null;
-    public $showInactive = false; // Add toggle for showing inactive trucks
+    public $showInactive = false;
 
     // Assignment form fields
     public $driver_id = '';
@@ -45,6 +46,17 @@ class TruckList extends Component
         $this->showAssignModal = false;
         $this->selectedTruckId = null;
         $this->reset(['driver_id', 'start_time', 'end_time']);
+    }
+
+    private function logTruckActivity($truckId, $action, $liters = null, $location = null, $remarks = null)
+    {
+        return TruckLog::create([
+            'truck_id' => $truckId,
+            'action' => $action,
+            'liters' => $liters,
+            'location' => $location,
+            'remarks' => $remarks,
+        ]);
     }
 
     public function assignDriver()
@@ -84,6 +96,27 @@ class TruckList extends Component
         // Update truck status to 'in-transit'
         $truck->update(['status' => 'in-transit']);
 
+        // Get area name for location
+        $areaName = $truck->currentArea ? $truck->currentArea->area_name : 'Unknown location';
+
+        // Log driver assignment with area name as location
+        $this->logTruckActivity(
+            $this->selectedTruckId,
+            'driver_assigned',
+            null,
+            $areaName, // Location is the area name
+            "Driver {$driver->user->first_name} {$driver->user->last_name} assigned (License: {$driver->license_number})"
+        );
+
+        // Log status change with area name as location
+        $this->logTruckActivity(
+            $this->selectedTruckId,
+            'status_change',
+            null,
+            $areaName, // Location is the area name
+            "Status changed from available to in-transit due to driver assignment"
+        );
+
         // Update driver status to 'on-duty'
         $driver->update(['status' => 'on-duty']);
 
@@ -102,6 +135,18 @@ class TruckList extends Component
             return;
         }
 
+        // Get area name for location
+        $areaName = $truck->currentArea ? $truck->currentArea->area_name : 'Unknown location';
+
+        // Log deactivation with area name as location
+        $this->logTruckActivity(
+            $id,
+            'inactive',
+            $truck->available_ltrs,
+            $areaName, // Location is the area name
+            "Truck deactivated and marked as inactive"
+        );
+
         // Mark the truck inactive before soft deleting it.
         $truck->update(['status' => 'inactive']);
 
@@ -114,7 +159,22 @@ class TruckList extends Component
     public function restoreTruck($id)
     {
         $truck = Truck::withTrashed()->findOrFail($id);
+
+        // Get area name for location
+        $areaName = $truck->currentArea ? $truck->currentArea->area_name : 'Unknown location';
+
         $truck->restore();
+
+        // Log restoration with area name as location
+        $this->logTruckActivity(
+            $id,
+            'status_change',
+            null,
+            $areaName, // Location is the area name
+            "Truck restored and set back to available status"
+        );
+
+        $truck->update(['status' => 'available']);
 
         session()->flash('message', 'Truck restored successfully!');
     }

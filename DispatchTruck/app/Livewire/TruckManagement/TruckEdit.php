@@ -4,6 +4,7 @@ namespace App\Livewire\TruckManagement;
 
 use App\Models\Truck;
 use App\Models\Area;
+use App\Models\TruckLog;
 use Livewire\Component;
 
 class TruckEdit extends Component
@@ -23,7 +24,7 @@ class TruckEdit extends Component
         'capacity_ltrs' => 'required|numeric|min:0',
         'available_ltrs' => 'required|numeric|min:0',
         'current_area_id' => 'nullable|exists:areas,id',
-        'status' => 'required|in:available,in-transit,maintenance',
+        'status' => 'required|in:available,in-transit,maintenance,inactive',
     ];
 
     protected $messages = [
@@ -31,6 +32,17 @@ class TruckEdit extends Component
         'capacity_ltrs.min' => 'Capacity must be a positive number.',
         'available_ltrs.min' => 'Available liters must be a positive number.',
     ];
+
+    private function logTruckActivity($truckId, $action, $liters = null, $location = null, $remarks = null)
+    {
+        return TruckLog::create([
+            'truck_id' => $truckId,
+            'action' => $action,
+            'liters' => $liters,
+            'location' => $location,
+            'remarks' => $remarks,
+        ]);
+    }
 
     public function mount($id)
     {
@@ -43,7 +55,7 @@ class TruckEdit extends Component
         $this->capacity_ltrs = $truck->capacity_ltrs;
         $this->available_ltrs = $truck->available_ltrs;
         $this->current_area_id = $truck->current_area_id;
-        $this->status = $truck->status; // This will be one of: 'available', 'in-transit', 'maintenance'
+        $this->status = $truck->status;
 
         // Load all active areas
         $this->areas = Area::where('status', 'active')
@@ -83,14 +95,50 @@ class TruckEdit extends Component
         $this->validate();
 
         $truck = Truck::findOrFail($this->truck_id);
+
+        // Track changes for logging
+        $changes = [];
+        if ($truck->truck_name != $this->truck_name) {
+            $changes[] = "Name: {$truck->truck_name} → {$this->truck_name}";
+        }
+        if ($truck->plate_number != $this->plate_number) {
+            $changes[] = "Plate: {$truck->plate_number} → {$this->plate_number}";
+        }
+        if ($truck->capacity_ltrs != $this->capacity_ltrs) {
+            $changes[] = "Capacity: {$truck->capacity_ltrs}L → {$this->capacity_ltrs}L";
+        }
+        if ($truck->available_ltrs != $this->available_ltrs) {
+            $changes[] = "Available fuel: {$truck->available_ltrs}L → {$this->available_ltrs}L";
+        }
+        if ($truck->current_area_id != $this->current_area_id) {
+            $oldArea = $truck->current_area_id ? Area::find($truck->current_area_id)->area_name : 'Not assigned';
+            $newArea = $this->current_area_id ? Area::find($this->current_area_id)->area_name : 'Not assigned';
+            $changes[] = "Area: {$oldArea} → {$newArea}";
+        }
+        if ($truck->status != $this->status) {
+            $changes[] = "Status: {$truck->status} → {$this->status}";
+        }
+
         $truck->update([
             'truck_name' => $this->truck_name,
             'plate_number' => $this->plate_number,
             'capacity_ltrs' => $this->capacity_ltrs,
             'available_ltrs' => $this->available_ltrs,
             'current_area_id' => $this->current_area_id ?: null,
-            'status' => $this->status, // This will be one of: 'available', 'in-transit', 'maintenance'
+            'status' => $this->status,
         ]);
+
+        // Log the changes if any with area name as location
+        if (!empty($changes)) {
+            $areaName = $truck->currentArea ? $truck->currentArea->area_name : 'Unknown location';
+            $this->logTruckActivity(
+                $this->truck_id,
+                'status_change',
+                null,
+                $areaName, // Location is the area name
+                "Truck updated: " . implode(' | ', $changes)
+            );
+        }
 
         session()->flash('message', 'Truck updated successfully!');
         return redirect()->route('admin.trucks.index');

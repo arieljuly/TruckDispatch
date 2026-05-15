@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('truck_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('truck_id')->constrained('trucks')->onDelete('cascade');
-            $table->enum('action', ['created', 'assigned', 'loaded', 'delivered', 'maintenance', 'refueled', 'status_change', 'departed', 'arrived', 'returned', 'driver_assigned', 'driver_unassigned',]->default('created'));
+            $table->enum('action', ['created', 'assigned', 'loaded', 'delivered', 'maintenance', 'refueled', 'inactive', 'departed', 'arrived', 'returned', 'driver_assigned', 'driver_unassigned',]->default('created'));
             $table->decimal('liters', 10, 2)->nullable();
             $table->string('location')->nullable();
             $table->text('remarks')->nullable();
