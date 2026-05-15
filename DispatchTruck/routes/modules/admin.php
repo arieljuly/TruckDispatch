@@ -4,6 +4,7 @@ use App\Livewire\AreaManagement\AreaList;
 use App\Livewire\Dashboard\AdminDashboard;
 use App\Livewire\Admin\UserManagement\UserShow;
 use App\Livewire\Admin\UserManagement\UserEdit;
+use App\Livewire\DispatchManagement\DispatchShow;
 use App\Livewire\TruckLogs\TruckLogShow;
 use App\Livewire\TruckManagement\TruckList; 
 use App\Livewire\TruckManagement\TruckCreate;
@@ -72,7 +73,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     //Dispatch Management
     Route::prefix('dispatch')->name('dispatch.')->group(function () {
-        Route::get('/', TruckLogShow::class)->name('index');
+        Route::get('/', DispatchShow::class)->name('index');
     });
 
     //Delivery Requests

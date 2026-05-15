@@ -13,7 +13,7 @@
         @if(auth()->user()->isAdmin())
             <livewire:sidebar.admin-sidebar />
         @elseif(auth()->user()->isDispatcher())
-            <livewire:sidebar.dispatcher-sidebar />
+            <livewire:sidebar.dispatch-sidebar />
         @elseif(auth()->user()->isDriver())
             <livewire:sidebar.driver-sidebar />
         @elseif(auth()->user()->isClient())
