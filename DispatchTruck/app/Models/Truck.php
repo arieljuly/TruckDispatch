@@ -16,13 +16,25 @@ class Truck extends Model
         'capacity_ltrs',
         'available_ltrs',
         'current_area_id',
-        'status', // available, in-transit, maintenance
+        'status',
     ];
 
     protected $casts = [
         'capacity_ltrs' => 'decimal:2',
         'available_ltrs' => 'decimal:2',
     ];
+
+    // Add a scope for active trucks (not deleted)
+    public function scopeActive($query)
+    {
+        return $query->whereNull('deleted_at');
+    }
+
+    // Add a scope for inactive trucks (deleted)
+    public function scopeInactive($query)
+    {
+        return $query->whereNotNull('deleted_at');
+    }
 
     public function currentArea()
     {

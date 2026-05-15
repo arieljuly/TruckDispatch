@@ -4,6 +4,7 @@ namespace App\Livewire\TruckManagement;
 
 use App\Models\Truck;
 use App\Models\TruckAssignment;
+use App\Models\Driver;
 use Livewire\Component;
 
 class TruckShow extends Component
@@ -22,14 +23,23 @@ class TruckShow extends Component
 
     public function endAssignment($assignmentId)
     {
-        $assignment = TruckAssignment::findOrFail($assignmentId);
+        $assignment = TruckAssignment::with(['truck', 'driver'])->findOrFail($assignmentId);
+
+        // Update assignment
         $assignment->update([
             'end_time' => now(),
             'status' => 'completed'
         ]);
 
-        // Update truck status to available
-        $this->truck->update(['status' => 'available']);
+        // Update truck status to 'available'
+        if ($assignment->truck) {
+            $assignment->truck->update(['status' => 'available']);
+        }
+
+        // Update driver status back to 'available'
+        if ($assignment->driver) {
+            $assignment->driver->update(['status' => 'available']);
+        }
 
         session()->flash('message', 'Assignment ended successfully!');
         return redirect()->route('admin.trucks.show', $this->truck->id);

@@ -17,6 +17,7 @@ class TruckList extends Component
     public $perPage = 10;
     public $showAssignModal = false;
     public $selectedTruckId = null;
+    public $showInactive = false; // Add toggle for showing inactive trucks
 
     // Assignment form fields
     public $driver_id = '';
@@ -56,12 +57,14 @@ class TruckList extends Component
 
         $truck = Truck::findOrFail($this->selectedTruckId);
 
+        // Check if truck already has an assignment
         if ($truck->currentAssignment) {
             session()->flash('error', 'This truck already has an active driver assignment.');
             $this->closeAssignModal();
             return;
         }
 
+        // Check if driver is still available
         $driver = Driver::find($this->driver_id);
         if ($driver && $driver->currentAssignment) {
             session()->flash('error', 'This driver is already assigned to another truck.');
@@ -69,6 +72,7 @@ class TruckList extends Component
             return;
         }
 
+        // Create the assignment
         TruckAssignment::create([
             'truck_id' => $this->selectedTruckId,
             'driver_id' => $this->driver_id,
@@ -76,6 +80,12 @@ class TruckList extends Component
             'end_time' => $this->end_time ?: null,
             'status' => 'active',
         ]);
+
+        // Update truck status to 'in-transit'
+        $truck->update(['status' => 'in-transit']);
+
+        // Update driver status to 'on-duty'
+        $driver->update(['status' => 'on-duty']);
 
         session()->flash('message', 'Driver assigned successfully!');
         $this->closeAssignModal();
@@ -86,19 +96,58 @@ class TruckList extends Component
     {
         $truck = Truck::findOrFail($id);
 
+        // Check if truck has active assignment
         if ($truck->currentAssignment) {
-            session()->flash('error', 'Cannot delete truck with active driver assignment.');
+            session()->flash('error', 'Cannot delete truck with active driver assignment. Please end the assignment first.');
             return;
         }
 
+        // Mark the truck inactive before soft deleting it.
+        $truck->update(['status' => 'inactive']);
+
+        // Soft delete the truck (sets deleted_at timestamp)
         $truck->delete();
-        session()->flash('message', 'Truck deleted successfully!');
+
+        session()->flash('message', 'Truck moved to inactive successfully!');
+    }
+
+    public function restoreTruck($id)
+    {
+        $truck = Truck::withTrashed()->findOrFail($id);
+        $truck->restore();
+
+        session()->flash('message', 'Truck restored successfully!');
+    }
+
+    public function forceDeleteTruck($id)
+    {
+        $truck = Truck::withTrashed()->findOrFail($id);
+
+        // Check if truck has assignments
+        if ($truck->assignments()->exists()) {
+            session()->flash('error', 'Cannot permanently delete truck with assignment history.');
+            return;
+        }
+
+        // Permanently delete
+        $truck->forceDelete();
+
+        session()->flash('message', 'Truck permanently deleted successfully!');
     }
 
     public function render()
     {
-        $trucks = Truck::query()
-            ->with(['currentArea', 'currentAssignment.driver.user'])
+        $query = Truck::query()
+            ->with(['currentArea', 'currentAssignment.driver.user']);
+
+        // Show inactive trucks if toggle is on
+        if ($this->showInactive) {
+            $query->withTrashed();
+        } else {
+            $query->whereNull('deleted_at');
+        }
+
+        $trucks = $query
             ->when($this->search, function ($query) {
                 $query->where('truck_name', 'like', '%' . $this->search . '%')
                     ->orWhere('plate_number', 'like', '%' . $this->search . '%');
@@ -106,9 +155,19 @@ class TruckList extends Component
             ->when($this->statusFilter, function ($query) {
                 $query->where('status', $this->statusFilter);
             })
+            ->orderBy('id', 'desc')
             ->paginate($this->perPage);
 
-        $drivers = Driver::with('user')->where('status', 'available')->get();
+        // Fetch only available drivers (no active assignments)
+        $drivers = Driver::with('user')
+            ->whereHas('user', function ($query) {
+                $query->where('status', 'active')
+                    ->where('role_id', 3);
+            })
+            ->where('status', 'available')
+            ->whereDoesntHave('currentAssignment')
+            ->orderBy('id')
+            ->get();
 
         return view('livewire.truck-management.truck-list', [
             'trucks' => $trucks,

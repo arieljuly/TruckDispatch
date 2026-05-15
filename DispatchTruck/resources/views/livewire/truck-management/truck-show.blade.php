@@ -24,7 +24,16 @@
 
         @if (session()->has('message'))
             <div class="mb-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
-                <p class="text-sm text-green-700">{{ session('message') }}</p>
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-green-700">{{ session('message') }}</p>
+                    </div>
+                </div>
             </div>
         @endif
 
@@ -82,28 +91,43 @@
                     <h3 class="text-lg font-medium text-gray-900">Current Assignment</h3>
                 </div>
                 <div class="p-6">
-                    @if($truck->currentAssignment)
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
+                    @if($truck->currentAssignment && $truck->currentAssignment->driver)
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between pb-2 border-b">
                                 <span class="text-sm font-medium text-gray-500">Driver:</span>
-                                <span class="text-gray-900">{{ $truck->currentAssignment->driver->user->name ?? 'N/A' }}</span>
+                                <span class="text-gray-900 font-medium">
+                                    {{ trim($truck->currentAssignment->driver->user->first_name ?? '') }} 
+                                    {{ trim($truck->currentAssignment->driver->user->last_name ?? '') }}
+                                </span>
                             </div>
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between pb-2 border-b">
                                 <span class="text-sm font-medium text-gray-500">License:</span>
-                                <span class="text-gray-900">{{ $truck->currentAssignment->driver->license_number ?? 'N/A' }}</span>
+                                <span class="text-gray-900">{{ $truck->currentAssignment->driver->licensed_number ?? 'N/A' }}</span>
                             </div>
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between pb-2 border-b">
                                 <span class="text-sm font-medium text-gray-500">Started:</span>
                                 <span class="text-gray-900">{{ $truck->currentAssignment->start_time->format('M d, Y H:i') }}</span>
                             </div>
+                            @if($truck->currentAssignment->end_time)
+                                <div class="flex items-center justify-between pb-2 border-b">
+                                    <span class="text-sm font-medium text-gray-500">Expected End:</span>
+                                    <span class="text-gray-900">{{ $truck->currentAssignment->end_time->format('M d, Y H:i') }}</span>
+                                </div>
+                            @endif
                             <div class="pt-3">
-                                <button onclick="endAssignment({{ $truck->currentAssignment->id }})" class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                                <button onclick="endAssignment({{ $truck->currentAssignment->id }})" 
+                                    class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-150">
                                     End Assignment
                                 </button>
                             </div>
                         </div>
                     @else
-                        <p class="text-gray-500 text-center py-4">No active driver assignment</p>
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <p class="mt-2 text-gray-500">No active driver assignment</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -118,27 +142,52 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Driver</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Start Time</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">End Time</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
+                    <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($assignments as $assignment)
                             <tr>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $assignment->driver->user->name ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $assignment->start_time->format('M d, Y H:i') }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $assignment->end_time ? $assignment->end_time->format('M d, Y H:i') : 'Active' }}</td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $assignment->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ trim($assignment->driver->user->first_name ?? '') }} 
+                                        {{ trim($assignment->driver->user->last_name ?? '') }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        License #: {{ $assignment->driver->licensed_number ?? 'N/A' }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">
+                                    {{ $assignment->start_time->format('M d, Y H:i') }}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">
+                                    @if($assignment->end_time)
+                                        {{ $assignment->end_time->format('M d, Y H:i') }}
+                                    @else
+                                        <span class="text-green-600 font-medium">Active</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    @php
+                                        $assignmentStatusColors = [
+                                            'active' => 'bg-green-100 text-green-800',
+                                            'completed' => 'bg-gray-100 text-gray-800',
+                                            'cancelled' => 'bg-red-100 text-red-800',
+                                        ];
+                                    @endphp
+                                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ $assignmentStatusColors[$assignment->status] ?? 'bg-gray-100' }}">
                                         {{ ucfirst($assignment->status) }}
                                     </span>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">No assignment history</td>
+                                <td colspan="4" class="px-6 py-12 text-center">
+                                    <div class="text-gray-500">No assignment history found.</div>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -153,17 +202,22 @@
     function endAssignment(assignmentId) {
         Swal.fire({
             title: 'End Assignment?',
-            text: "This will mark the assignment as completed",
+            text: "This will mark the assignment as completed and make the truck available",
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#dc2626',
             cancelButtonColor: '#6b7280',
             confirmButtonText: 'Yes, end it!',
             cancelButtonText: 'Cancel',
+            reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
                 @this.call('endAssignment', assignmentId);
             }
         });
+    }
+
+    function openAssignModal(truckId) {
+        @this.dispatch('openAssignModal', { truckId: truckId });
     }
 </script>
