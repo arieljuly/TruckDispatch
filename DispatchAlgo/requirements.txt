@@ -1,6 +1,10 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.4
-numpy==1.26.4
-scipy==1.13.1
-python-multipart==0.0.20
+# DispatchAlgo/requirements.txt
+fastapi==0.104.1
+uvicorn==0.24.0
+scikit-learn==1.3.2
+pandas==2.1.3
+numpy==1.24.3
+joblib==1.3.2
+pydantic==2.5.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
