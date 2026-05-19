@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -19,11 +18,35 @@ return new class extends Migration
             $table->decimal('total_supply', 12, 2);
             $table->enum('status', ['pending', 'executed', 'failed'])->default('pending');
             $table->text('notes')->nullable();
+
+            // AI/ML Fields for fuel prediction and truck recommendation
+            $table->unsignedBigInteger('recommended_truck_id')->nullable();
+            $table->unsignedBigInteger('assigned_truck_id')->nullable();
+            $table->decimal('predicted_fuel_liters', 10, 2)->nullable();
+            $table->string('optimization_method')->nullable();
+            $table->string('prediction_model_version')->nullable();
+            $table->unsignedBigInteger('executed_by')->nullable();
+            $table->decimal('distance_km', 10, 2)->nullable();
+            $table->decimal('actual_duration_hours', 8, 2)->nullable();
+            $table->decimal('average_mpg', 8, 2)->nullable();
+            $table->decimal('idle_time_hours', 8, 2)->nullable();
+            $table->integer('detention_minutes')->nullable();
+            $table->integer('delay_minutes')->nullable();
+            $table->boolean('on_time_flag')->default(true);
+
             $table->timestamps();
+
+            // Foreign keys
+            $table->foreign('recommended_truck_id')->references('id')->on('trucks')->onDelete('set null');
+            $table->foreign('assigned_truck_id')->references('id')->on('trucks')->onDelete('set null');
+            $table->foreign('executed_by')->references('id')->on('users')->onDelete('set null');
 
             $table->index('DateCreated');
             $table->index('status');
             $table->index(['algorithm_used', 'status']);
+            $table->index('recommended_truck_id');
+            $table->index('assigned_truck_id');
+            $table->index('predicted_fuel_liters');
         });
     }
 

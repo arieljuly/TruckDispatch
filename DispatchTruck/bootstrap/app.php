@@ -4,6 +4,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\RoleMiddleware;
+use App\Console\Commands\ExportTrainingData;
+use App\Console\Commands\CheckMLHealth;
+use App\Console\Commands\CleanupOldExports;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,4 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->withCommands([
+        ExportTrainingData::class,
+        CheckMLHealth::class,
+        CleanupOldExports::class,
+    ])
+    ->create();

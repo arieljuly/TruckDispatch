@@ -2,8 +2,12 @@
     <div class="py-6">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <h1 class="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
-            <p class="mt-1 text-sm text-gray-600">Welcome back, {{ auth()->user()->name }}! Here's your shipping
-                overview.</p>
+            @auth
+                <p class="mt-1 text-sm text-gray-600">Welcome back, {{ auth()->user()->name }}! Here's your shipping
+                    overview.</p>
+            @else
+                <p class="mt-1 text-sm text-gray-600">Welcome! Here's your shipping overview.</p>
+            @endauth
         </div>
 
         <!-- Stats Grid -->
@@ -138,7 +142,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mar 20, 2025</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <button class="text-indigo-600 hover:text-indigo-900">Track</button>
+                                    <button type="button" class="text-indigo-600 hover:text-indigo-900">Track</button>
                                 </td>
                             </tr>
                             <tr>
@@ -151,7 +155,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mar 22, 2025</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <button class="text-indigo-600 hover:text-indigo-900">Details</button>
+                                    <button type="button" class="text-indigo-600 hover:text-indigo-900">Details</button>
                                 </td>
                             </tr>
                             <tr>
@@ -164,7 +168,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mar 18, 2025</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <button class="text-indigo-600 hover:text-indigo-900">Receipt</button>
+                                    <button type="button" class="text-indigo-600 hover:text-indigo-900">Receipt</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -181,16 +185,16 @@
                 </div>
                 <div class="px-4 py-5 sm:p-6">
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <button
-                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                        <button type="button"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
                             Create New Shipment
                         </button>
-                        <button
-                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <button type="button"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
@@ -198,8 +202,8 @@
                             </svg>
                             View All Shipments
                         </button>
-                        <button
-                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <button type="button"
+                            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">

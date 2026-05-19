@@ -4,6 +4,12 @@ use App\Livewire\AreaManagement\AreaList;
 use App\Livewire\Dashboard\AdminDashboard;
 use App\Livewire\Admin\UserManagement\UserShow;
 use App\Livewire\Admin\UserManagement\UserEdit;
+use App\Livewire\DispatchManagement\AllocationCreate;
+use App\Livewire\DispatchManagement\AllocationList;
+use App\Livewire\DispatchManagement\AssignmentList;
+use App\Livewire\DispatchManagement\AssignmentShow;
+use App\Livewire\DispatchManagement\CreateDispatch;
+use App\Livewire\DispatchManagement\DispatchHistory;
 use App\Livewire\DispatchManagement\DispatchShow;
 use App\Livewire\TruckLogs\TruckLogShow;
 use App\Livewire\TruckManagement\TruckList; 
@@ -71,9 +77,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', TruckLogShow::class)->name('index');
     });
 
-    //Dispatch Management
     Route::prefix('dispatch')->name('dispatch.')->group(function () {
-        Route::get('/', DispatchShow::class)->name('index');
+        Route::get('/', DispatchHistory::class)->name('index');
+
+        Route::get('/create', CreateDispatch::class)->name('create');
+
+        // View specific dispatch session
+        Route::get('/sessions/{id}', DispatchShow::class)->name('show');
+
+        // Allocations (view only)
+        Route::get('/allocations', AllocationList::class)->name('allocations');
+
+        // Assignments
+        Route::get('/assignments', AssignmentList::class)->name('assignments');
+        Route::get('/assignments/{id}', AssignmentShow::class)->name('assignment.show');
     });
 
     //Delivery Requests

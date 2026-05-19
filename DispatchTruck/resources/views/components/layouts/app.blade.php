@@ -3,7 +3,6 @@
 
 <head>
     @include('partials.head')
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -111,26 +110,38 @@
 
     <script>
         // Mobile menu toggle
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        const sidebar = document.querySelector('.sidebar');
+        window.initAppLayout = function () {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.querySelector('.sidebar');
 
-        if (mobileMenuToggle && sidebar) {
-            mobileMenuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('-translate-x-full');
-            });
-        }
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function (event) {
-            if (window.innerWidth < 1024) {
-                const isClickInsideSidebar = sidebar?.contains(event.target);
-                const isClickOnToggle = mobileMenuToggle?.contains(event.target);
-
-                if (!isClickInsideSidebar && !isClickOnToggle && sidebar && !sidebar.classList.contains('-translate-x-full')) {
-                    sidebar.classList.add('-translate-x-full');
-                }
+            if (mobileMenuToggle && sidebar && !mobileMenuToggle.dataset.bound) {
+                mobileMenuToggle.dataset.bound = 'true';
+                mobileMenuToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('-translate-x-full');
+                });
             }
-        });
+
+            if (!window.appLayoutOutsideClickBound) {
+                window.appLayoutOutsideClickBound = true;
+
+                // Close sidebar when clicking outside on mobile
+                document.addEventListener('click', function (event) {
+                    const currentSidebar = document.querySelector('.sidebar');
+                    const currentToggle = document.getElementById('mobileMenuToggle');
+
+                    if (window.innerWidth < 1024) {
+                        const isClickInsideSidebar = currentSidebar?.contains(event.target);
+                        const isClickOnToggle = currentToggle?.contains(event.target);
+
+                        if (!isClickInsideSidebar && !isClickOnToggle && currentSidebar && !currentSidebar.classList.contains('-translate-x-full')) {
+                            currentSidebar.classList.add('-translate-x-full');
+                        }
+                    }
+                });
+            }
+        };
+
+        window.initAppLayout();
 
         // Toast notification system
         window.showToast = function (message, type = 'success') {
@@ -169,6 +180,7 @@
             }, 5000);
         };
     </script>
+    @livewireScripts
     @stack('scripts')
 </body>
 

@@ -7,15 +7,28 @@ use Illuminate\Database\Eloquent\Model;
 class DispatchAllocation extends Model
 {
     protected $table = "dispatch_allocations";
+
     protected $fillable = [
         'dispatch_session_id',
         'truck_id',
         'area_id',
-        'allocated_liters',
+        'liters_allocated',  // Changed from 'allocated_liters'
         'distance_used',
-        'is_primary_area', 
-        'status', //pending, completed, failed
+        'is_primary_area',
+        'status', // pending, completed, failed
     ];
+
+    // Add an accessor for backward compatibility
+    public function getAllocatedLitersAttribute()
+    {
+        return $this->liters_allocated;
+    }
+
+    // Add a mutator for backward compatibility
+    public function setAllocatedLitersAttribute($value)
+    {
+        $this->attributes['liters_allocated'] = $value;
+    }
 
     public function dispatchSession()
     {

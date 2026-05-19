@@ -1,0 +1,6 @@
+distance_km,actual_duration_hours,average_mpg,idle_time_hours,detention_minutes,delay_minutes,on_time_flag,fuel_used_liters
+56,89,90,50,46,81,1,109.88
+65,16,89,82,71,75,1,177.26
+94,22,16,88,27,68,1,193.73
+89,18,91,59,95,61,1,129.47
+46,28,20,20,32,66,1,47.91

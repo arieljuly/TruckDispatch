@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>TruckDispatch</title>
 
-    <!-- Google Fonts - Poppins -->
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
-
-    @vite(['resources/css/app.css'])
-    @stack('styles')
-    @livewireStyles
 
     <style>
         * {
@@ -20,47 +20,24 @@
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
             background-color: #f3f4f6;
             color: #111827;
         }
-
-        /* Ensure all text has dark color */
-        .text-white {
-            color: #ffffff !important;
-        }
-
-        .text-gray-900,
-        .text-gray-800,
-        .text-gray-700,
-        .text-gray-600 {
-            color: #111827 !important;
-        }
     </style>
+
+    @livewireStyles
 </head>
 
 <body class="bg-gray-50">
     @auth
-        <!-- Include sidebar based on user role -->
-        @if(auth()->user()->role === 'admin')
-            @include('admin.sidebar')
-        @elseif(auth()->user()->role === 'client')
-            @include('client.sidebar')
-        @endif
-
-        <!-- Main content with margin for sidebar -->
-        <main class="lg:pl-64">
-            <div class="p-4 sm:p-6 lg:p-8">
-                {{ $slot }}
-            </div>
+        <main class="container mx-auto px-4 py-8">
+            {{ $slot }}
         </main>
     @else
-        <!-- No sidebar for guests -->
         {{ $slot }}
     @endauth
-
+@livewireScripts
     @stack('scripts')
-    @livewireScripts
 </body>
 
 </html>

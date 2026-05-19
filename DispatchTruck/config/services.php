@@ -34,5 +34,12 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'fastapi' => [
+        'url' => env('FASTAPI_URL', 'http://localhost:8000'),
+        'timeout' => env('FASTAPI_TIMEOUT', 5),
+        'fallback_enabled' => env('FASTAPI_FALLBACK_ENABLED', true),
+        'retry_times' => env('FASTAPI_RETRY_TIMES', 1),
+        'retry_milliseconds' => env('FASTAPI_RETRY_MS', 100),
+    ],
 
 ];
