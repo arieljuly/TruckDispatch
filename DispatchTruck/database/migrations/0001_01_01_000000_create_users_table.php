@@ -75,7 +75,6 @@ return new class extends Migration {
             $table->index(['email', 'email_verified_at']);
             $table->index(['created_at', 'updated_at']);
             $table->index('company_name');
-            $table->index('city');
             $table->index('status');
         });
 

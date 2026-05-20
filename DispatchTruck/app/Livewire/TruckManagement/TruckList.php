@@ -93,8 +93,8 @@ class TruckList extends Component
             'status' => 'active',
         ]);
 
-        // Update truck status to 'in-transit'
-        $truck->update(['status' => 'in-transit']);
+        // FIX: Use underscore, not hyphen
+        $truck->update(['status' => 'in_transit']);  // Changed from 'in-transit'
 
         // Get area name for location
         $areaName = $truck->currentArea ? $truck->currentArea->area_name : 'Unknown location';
@@ -104,7 +104,7 @@ class TruckList extends Component
             $this->selectedTruckId,
             'driver_assigned',
             null,
-            $areaName, // Location is the area name
+            $areaName,
             "Driver {$driver->user->first_name} {$driver->user->last_name} assigned (License: {$driver->license_number})"
         );
 
@@ -113,8 +113,8 @@ class TruckList extends Component
             $this->selectedTruckId,
             'status_change',
             null,
-            $areaName, // Location is the area name
-            "Status changed from available to in-transit due to driver assignment"
+            $areaName,
+            "Status changed from available to in_transit due to driver assignment"
         );
 
         // Update driver status to 'on-duty'

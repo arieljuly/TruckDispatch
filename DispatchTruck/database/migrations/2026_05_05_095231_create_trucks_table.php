@@ -15,8 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('truck_name');
             $table->string('plate_number')->nullable()->unique();
-            $table->decimal('capacity_ltrs', 10, 2);
-            $table->decimal('available_ltrs', 10, 2);
             $table->foreignId('current_area_id')->nullable()->constrained('areas')->nullOnDelete();
             $table->enum('status', ['available', 'in_transit', 'maintenance'])->default('available');
             $table->timestamps();
@@ -24,7 +22,6 @@ return new class extends Migration
 
             $table->index('status');
             $table->index('current_area_id');
-            $table->index(['status', 'available_ltrs']);
         });
     }
 

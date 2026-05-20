@@ -5,21 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Area extends Model
+class Station extends Model
 {
     use SoftDeletes;
 
-    protected $table = "areas";
+    protected $table = "stations";
     protected $fillable = [
-        'area_name',
-        'area_code',
+        'user_id',
+        'area_id',
+        'station_code',
+        'station_name',
+        'address',
         'latitude',
         'longitude',
         'status',
-    ];
-
-    protected $casts = [
-        'latitude' => 'decimal:7',
-        'longitude' => 'decimal:7',
     ];
 }

@@ -24,7 +24,7 @@ class TruckEdit extends Component
         'capacity_ltrs' => 'required|numeric|min:0',
         'available_ltrs' => 'required|numeric|min:0',
         'current_area_id' => 'nullable|exists:areas,id',
-        'status' => 'required|in:available,in-transit,maintenance,inactive',
+        'status' => 'required|in:available,in_transit,maintenance,inactive',
     ];
 
     protected $messages = [

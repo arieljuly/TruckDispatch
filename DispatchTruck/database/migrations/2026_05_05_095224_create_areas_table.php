@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('areas', function (Blueprint $table) {
             $table->id();
             $table->string('area_name')->unique();
-            $table->decimal('required_liters', 10, 2)->default(0);
+            $table->string('area_code')->nullable();
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
+            $table->enum('active', ['active', 'inactive'])->default('active');
             $table->timestamps();
             $table->softDeletes();
 

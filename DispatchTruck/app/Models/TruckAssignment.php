@@ -38,10 +38,10 @@ class TruckAssignment extends Model
         static::created(function ($assignment) {
             if ($assignment->status === 'active') {
                 if ($assignment->truck) {
-                    $assignment->truck->update(['status' => 'in-transit']);
+                    $assignment->truck->update(['status' => 'in_transit']);
                 }
                 if ($assignment->driver) {
-                    $assignment->driver->update(['status' => 'on-duty']);
+                    $assignment->driver->update(['status' => 'on_duty']);
                 }
             }
         });
@@ -63,10 +63,10 @@ class TruckAssignment extends Model
             // If changed to active from something else
             elseif ($newStatus === 'active' && $originalStatus !== 'active') {
                 if ($assignment->truck) {
-                    $assignment->truck->update(['status' => 'in-transit']);
+                    $assignment->truck->update(['status' => 'in_transit']);
                 }
                 if ($assignment->driver) {
-                    $assignment->driver->update(['status' => 'on-duty']);
+                    $assignment->driver->update(['status' => 'on_duty']);
                 }
             }
         });
