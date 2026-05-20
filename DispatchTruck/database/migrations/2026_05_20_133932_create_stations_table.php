@@ -21,6 +21,7 @@ return new class extends Migration
 
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
+            $table->decimal('required_liters', 15, 4)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
 
             $table->timestamps();

@@ -1,10 +1,23 @@
+{{-- DispatchTruck/resources/views/livewire/area-management/area-create.blade.php --}}
 <div class="py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header Section -->
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Create New Area</h1>
-                <p class="mt-1 text-sm text-gray-600">Add a new delivery area with location details</p>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    @if($location_type === 'area')
+                        Create New Area
+                    @else
+                        Create New Station
+                    @endif
+                </h1>
+                <p class="mt-1 text-sm text-gray-600">
+                    @if($location_type === 'area')
+                        Add a new delivery area with location details
+                    @else
+                        Add a new station that belongs to an area and client
+                    @endif
+                </p>
             </div>
             <div class="mt-4 sm:mt-0">
                 <a href="{{ route('admin.areas.index') }}"
@@ -30,18 +43,6 @@
                     <div class="ml-3">
                         <p class="text-sm text-green-700">{{ session('message') }}</p>
                     </div>
-                    <div class="ml-auto pl-3">
-                        <div class="-mx-1.5 -my-1.5">
-                            <button type="button"
-                                class="inline-flex rounded-md p-1.5 text-green-500 hover:bg-green-100 focus:outline-none"
-                                data-bs-dismiss="alert">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         @endif
@@ -51,8 +52,31 @@
             <!-- Form Card -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <h3 class="text-lg font-medium text-gray-900">Area Information</h3>
-                    <p class="mt-1 text-sm text-gray-500">Fill in the details for the new delivery area</p>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">
+                                @if($location_type === 'area')
+                                    Area Information
+                                @else
+                                    Station Information
+                                @endif
+                            </h3>
+                            <p class="mt-1 text-sm text-gray-500">Fill in the details for the new {{ $location_type }}</p>
+                        </div>
+                        <!-- Location Type Toggle -->
+                        <div class="flex space-x-2">
+                            <button type="button" 
+                                wire:click="$set('location_type', 'area')"
+                                class="px-3 py-1 text-sm rounded-md transition-colors duration-150 {{ $location_type === 'area' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                Create Area
+                            </button>
+                            <button type="button"
+                                wire:click="$set('location_type', 'station')"
+                                class="px-3 py-1 text-sm rounded-md transition-colors duration-150 {{ $location_type === 'station' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                Create Station
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="p-6">
@@ -71,7 +95,7 @@
                                         </svg>
                                     </div>
                                     <input type="text"
-                                        class="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('search_query') border-red-300 @enderror"
+                                        class="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white"
                                         id="search_query" wire:model.live.debounce.500ms="search_query"
                                         wire:keyup="searchLocation" placeholder="Search for city, street, or address...">
                                 </div>
@@ -114,30 +138,109 @@
                             </div>
                         @endif
 
-                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
-                            <div>
-                                <label for="area_name" class="block text-sm font-medium text-gray-700 mb-2">Area Name <span
-                                        class="text-red-500">*</span></label>
+                        <!-- Name Field -->
+                        <div class="mb-6">
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                                {{ $location_type === 'area' ? 'Area Name' : 'Station Name' }} <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('name') border-red-300 @enderror"
+                                id="name" wire:model="name">
+                            <p class="mt-1 text-xs text-gray-500">
+                                {{ $location_type === 'area' ? 'Enter a descriptive name for the area' : 'Enter the station name' }}
+                            </p>
+                            @error('name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Area Specific Fields -->
+                        @if($location_type === 'area')
+                            <div class="mb-6">
+                                <label for="area_code" class="block text-sm font-medium text-gray-700 mb-2">Area Code <span class="text-red-500">*</span></label>
                                 <input type="text"
-                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('area_name') border-red-300 @enderror"
-                                    id="area_name" wire:model="area_name">
-                                @error('area_name')
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('area_code') border-red-300 @enderror"
+                                    id="area_code" wire:model="area_code" placeholder="e.g., AREA001, NORTH-01, DVO-001">
+                                <p class="mt-1 text-xs text-gray-500">Enter a unique code for this area (e.g., AREA001, NORTH-01)</p>
+                                @error('area_code')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
+
+                        <!-- Station Specific Fields -->
+                        @if($location_type === 'station')
+                            <div class="mb-6">
+                                <label for="station_code" class="block text-sm font-medium text-gray-700 mb-2">Station Code <span class="text-red-500">*</span></label>
+                                <input type="text"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('station_code') border-red-300 @enderror"
+                                    id="station_code" wire:model="station_code" placeholder="e.g., ST001, GAS-01, SHELL-MAIN">
+                                <p class="mt-1 text-xs text-gray-500">Enter a unique code for this station</p>
+                                @error('station_code')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
-                            <div>
-                                <label for="required_liters" class="block text-sm font-medium text-gray-700 mb-2">Required
-                                    Liters <span class="text-red-500">*</span></label>
+                            <div class="mb-6">
+                                <label for="area_id" class="block text-sm font-medium text-gray-700 mb-2">Area <span class="text-red-500">*</span></label>
+                                <select id="area_id" wire:model="area_id"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('area_id') border-red-300 @enderror">
+                                    <option value="">Select an area</option>
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id }}">
+                                            {{ $area->area_name }} ({{ $area->area_code }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('area_id')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Client Selection Dropdown -->
+                            <div class="mb-6">
+                                <label for="user_id" class="block text-sm font-medium text-gray-700 mb-2">Client <span class="text-red-500">*</span></label>
+                                <select id="user_id" wire:model="user_id"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('user_id') border-red-300 @enderror">
+                                    <option value="">Select a client</option>
+                                    @foreach($clients as $client)
+                                        <option value="{{ $client->id }}">
+                                            {{ $client->full_name }} 
+                                            @if($client->company_name)
+                                                ({{ $client->company_name }})
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Select the client who owns this station</p>
+                                @error('user_id')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="mb-6">
+                                <label for="required_liters" class="block text-sm font-medium text-gray-700 mb-2">Required Liters <span class="text-red-500">*</span></label>
                                 <input type="number" step="0.01"
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white @error('required_liters') border-red-300 @enderror"
-                                    id="required_liters" wire:model="required_liters">
+                                    id="required_liters" wire:model="required_liters" placeholder="0.00">
+                                <p class="mt-1 text-xs text-gray-500">This station's daily fuel requirement in liters</p>
                                 @error('required_liters')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
-                        </div>
 
+                            <div class="mb-6">
+                                <label for="address" class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                <textarea rows="2"
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 bg-white"
+                                    id="address" wire:model="address" placeholder="Full address of the station"></textarea>
+                                @error('address')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
+
+                        <!-- Location Coordinates -->
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
                             <div>
                                 <label for="latitude" class="block text-sm font-medium text-gray-700 mb-2">Latitude <span
@@ -169,7 +272,7 @@
                             </a>
                             <button type="submit"
                                 class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150">
-                                Create Area
+                                Create {{ $location_type === 'area' ? 'Area' : 'Station' }}
                             </button>
                         </div>
                     </form>

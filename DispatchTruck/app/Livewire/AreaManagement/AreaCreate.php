@@ -3,17 +3,20 @@
 namespace App\Livewire\AreaManagement;
 
 use App\Models\Area;
+use App\Models\Station;
+use App\Models\User;
 use App\Services\NominatimService;
 use Livewire\Component;
 use Livewire\Attributes\Rule;
 
 class AreaCreate extends Component
 {
-    #[Rule('required|string|max:255')]
-    public $area_name = '';
+    // Type selection
+    public $location_type = 'area'; // 'area' or 'station'
 
-    #[Rule('required|numeric|min:0')]
-    public $required_liters = '';
+    // Common fields
+    #[Rule('required|string|max:255')]
+    public $name = '';
 
     #[Rule('required|numeric|between:-90,90')]
     public $latitude = '7.1907';  // Davao City latitude
@@ -21,16 +24,69 @@ class AreaCreate extends Component
     #[Rule('required|numeric|between:-180,180')]
     public $longitude = '125.4553'; // Davao City longitude
 
+    // Area specific fields
+    #[Rule('required|string|max:50|unique:areas,area_code')]
+    public $area_code = '';
+
+    // Station specific fields
+    public $area_id = '';
+    public $user_id = '';
+    #[Rule('required|numeric|min:0')]
+    public $required_liters = '';
+    public $address = '';
+    #[Rule('required|string|max:50')]
+    public $station_code = '';
+
+    // Search related
     public $search_query = '';
     public $search_results = [];
     public $show_search = false;
     public $selected_address = '';
+
+    // Dropdown data
+    public $areas = [];
+    public $clients = [];
 
     protected $nominatim;
 
     public function boot(NominatimService $nominatim)
     {
         $this->nominatim = $nominatim;
+    }
+
+    public function mount()
+    {
+        $this->loadAreas();
+        $this->loadClients();
+    }
+
+    public function updatedLocationType()
+    {
+        $this->resetValidation();
+        $this->selected_address = '';
+        $this->search_query = '';
+        $this->search_results = [];
+        $this->show_search = false;
+        $this->name = '';
+        $this->area_code = '';
+        $this->station_code = '';
+
+        if ($this->location_type === 'station') {
+            $this->loadAreas();
+            $this->loadClients();
+        }
+    }
+
+    public function loadAreas()
+    {
+        $this->areas = Area::orderBy('area_name')->get(['id', 'area_name', 'area_code']);
+    }
+
+    public function loadClients()
+    {
+        $this->clients = User::whereHas('role', function ($query) {
+            $query->where('role_name', 'client');
+        })->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'company_name']);
     }
 
     public function searchLocation()
@@ -52,8 +108,12 @@ class AreaCreate extends Component
         $this->show_search = false;
         $this->search_query = '';
 
-        if (empty($this->area_name)) {
-            $this->area_name = $this->extractCityName($displayName);
+        if (empty($this->name)) {
+            $this->name = $this->extractCityName($displayName);
+        }
+
+        if ($this->location_type === 'station') {
+            $this->address = $displayName;
         }
 
         $this->dispatch('updateMap', lat: (float) $lat, lon: (float) $lon, zoom: 15);
@@ -81,6 +141,9 @@ class AreaCreate extends Component
             $address = $this->nominatim->reverseGeocode($this->latitude, $this->longitude);
             if ($address) {
                 $this->selected_address = $address['display_name'];
+                if ($this->location_type === 'station') {
+                    $this->address = $address['display_name'];
+                }
             }
         }
     }
@@ -93,16 +156,52 @@ class AreaCreate extends Component
 
     public function save()
     {
-        $this->validate();
+        if ($this->location_type === 'area') {
+            // Validate for Area
+            $this->validate([
+                'name' => 'required|string|max:255',
+                'area_code' => 'required|string|max:50|unique:areas,area_code',
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
+            ]);
 
-        Area::create([
-            'area_name' => $this->area_name,
-            'required_liters' => $this->required_liters,
-            'latitude' => $this->latitude,
-            'longitude' => $this->longitude,
-        ]);
+            Area::create([
+                'area_name' => $this->name,
+                'area_code' => $this->area_code,
+                'latitude' => $this->latitude,
+                'longitude' => $this->longitude,
+                'status' => 'active',
+            ]);
 
-        session()->flash('message', 'Area created successfully!');
+            session()->flash('message', 'Area created successfully!');
+        } else {
+            // Validate for Station
+            $this->validate([
+                'name' => 'required|string|max:255',
+                'station_code' => 'required|string|max:50|unique:stations,station_code',
+                'area_id' => 'required|exists:areas,id',
+                'user_id' => 'required|exists:users,id',
+                'required_liters' => 'required|numeric|min:0',
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
+                'address' => 'nullable|string|max:500',
+            ]);
+
+            Station::create([
+                'station_name' => $this->name,
+                'station_code' => $this->station_code,
+                'area_id' => $this->area_id,
+                'user_id' => $this->user_id,
+                'required_liters' => $this->required_liters,
+                'latitude' => $this->latitude,
+                'longitude' => $this->longitude,
+                'address' => $this->address ?: $this->selected_address,
+                'status' => 'active',
+            ]);
+
+            session()->flash('message', 'Station created successfully!');
+        }
+
         return redirect()->route('admin.areas.index');
     }
 
