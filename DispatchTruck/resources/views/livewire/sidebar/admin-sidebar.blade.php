@@ -72,7 +72,7 @@
 
                         <!-- Trucks Management Button -->
                         <a href="{{ route('admin.trucks.index') }}"
-                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks.index') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                             wire:navigate>
                             <svg class="w-5 h-5 mr-3" fill="currentColor" stroke="none" viewBox="0 0 256 256">
                                 <path
@@ -81,7 +81,27 @@
                             </svg>
                             {{ __('Trucks Management') }}
                         </a>
-
+<!-- Truck Compartments Management -->
+                                <a href="{{ route('admin.trucks.compartments') }}"
+                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks.compartments') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                                    wire:navigate>
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                    </svg>
+                                    {{ __('Truck Compartments') }}
+                                </a>
+                                <!-- Fuel Management -->
+                                <a href="{{ route('admin.trucks.fuel') }}"
+                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks.fuel') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                                    wire:navigate>
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19.5 12.572c0 1.12-.68 2.135-1.71 2.625a9.958 9.958 0 0 1-7.58 0c-1.03-.49-1.71-1.505-1.71-2.625V9.428c0-1.12.68-2.135 1.71-2.625a9.958 9.958 0 0 1 7.58 0c1.03.49 1.71 1.505 1.71 2.625v3.144zM4.5 12.572c0 1.12-.68 2.135-1.71 2.625a9.958 9.958 0 0 1-7.58 0c-1.03-.49-1.71-1.505-1.71-2.625V9.428c0-1.12.68-2.135 1.71-2.625a9.958 9.958 0 0 1 7.58 0c1.03.49 1.71 1.505 1.71 2.625v3.144z">
+                                        </path>
+                                    </svg>
+                                    {{ __('Fuel Management') }}
+                                </a>
                         <!-- Maintenance Button -->
                         <a href="{{ route('admin.maintenance.index') }}"
                             class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.maintenance*') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
