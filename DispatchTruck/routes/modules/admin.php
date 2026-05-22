@@ -12,6 +12,9 @@ use App\Livewire\DispatchManagement\CreateDispatch;
 use App\Livewire\DispatchManagement\DispatchHistory;
 use App\Livewire\DispatchManagement\DispatchShow;
 use App\Livewire\TruckLogs\TruckLogShow;
+use App\Livewire\TruckManagement\FuelCreate;
+use App\Livewire\TruckManagement\FuelEdit;
+use App\Livewire\TruckManagement\FuelList;
 use App\Livewire\TruckManagement\FuelManagement;
 use App\Livewire\TruckManagement\TruckCompartments;
 use App\Livewire\TruckManagement\TruckList; 
@@ -62,10 +65,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::prefix('trucks')->name('trucks.')->group(function () {
         Route::get('/', TruckList::class)->name('index');
         Route::get('/create', TruckCreate::class)->name('create');
-        Route::get('/compartments', TruckCompartments::class)->name('compartments'); // ✅ Before /{id}
-        Route::get('/fuel', FuelManagement::class)->name('fuel');                   // ✅ Before /{id}
+        Route::get('/compartments', TruckCompartments::class)->name('compartments');              // ✅ Before /{id}
         Route::get('/{id}', TruckShow::class)->name('show');                        // Dynamic last
         Route::get('/{id}/edit', TruckEdit::class)->name('edit');
+    });
+    Route::prefix('fuel')->name('fuel.')->group(function () {
+        Route::get('/', FuelManagement::class)->name('index');
+        Route::get('/list', FuelList::class)->name('list');
+        Route::get('/create', FuelCreate::class)->name('create');
+        Route::get('/{id}/edit', FuelEdit::class)->name('edit');
     });
     
     // Maintenance

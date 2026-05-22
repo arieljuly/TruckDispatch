@@ -92,12 +92,12 @@
                                     {{ __('Truck Compartments') }}
                                 </a>
                                 <!-- Fuel Management -->
-                                <a href="{{ route('admin.trucks.fuel') }}"
-                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.trucks.fuel') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
+                                <a href="{{ route('admin.fuel.index') }}"
+                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 {{ request()->routeIs('admin.fuel.index') ? 'bg-white/20 text-white shadow-lg' : 'text-white/80 hover:text-white hover:bg-white/10' }}"
                                     wire:navigate>
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19.5 12.572c0 1.12-.68 2.135-1.71 2.625a9.958 9.958 0 0 1-7.58 0c-1.03-.49-1.71-1.505-1.71-2.625V9.428c0-1.12.68-2.135 1.71-2.625a9.958 9.958 0 0 1 7.58 0c1.03.49 1.71 1.505 1.71 2.625v3.144zM4.5 12.572c0 1.12-.68 2.135-1.71 2.625a9.958 9.958 0 0 1-7.58 0c-1.03-.49-1.71-1.505-1.71-2.625V9.428c0-1.12.68-2.135 1.71-2.625a9.958 9.958 0 0 1 7.58 0c1.03.49 1.71 1.505 1.71 2.625v3.144z">
+                                            d="M19.5 12.572c0 1.12-.68 2.135-1.71 2.625a9.958 9.958 0 0 1-7.58 0c-1.03-.49-1.71-1.505-1.71-2.625V9.428c0-1.12.68-2.135 1.71-2.625a9.958 9.958 0 0 1 7.58 0c1.03.49 1.71 1.505 1.71 2.625v3.144zM4.5 12.572c0 1.12-.68 2.135-1.71 2.625a9.958 9.958 0 0 1-7.58 0c-1.03-.49-1.71-1.505-1.71-2.625V9.428c0-1.12.68-2.135 1.71-2.625a9.958 9.958 0 0 １ 7.58 0c1.03.49 １.7１ １．５０５ １．７１ ２．６２５v３．１４４z">
                                         </path>
                                     </svg>
                                     {{ __('Fuel Management') }}
