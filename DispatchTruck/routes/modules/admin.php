@@ -64,8 +64,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::prefix('trucks')->name('trucks.')->group(function () {
         Route::get('/', TruckList::class)->name('index');
-        Route::get('/create', TruckCreate::class)->name('create');
-        Route::get('/compartments', TruckCompartments::class)->name('compartments');              // ✅ Before /{id}
+        Route::get('/create', TruckCreate::class)->name('create');           // ✅ Before /{id}
         Route::get('/{id}', TruckShow::class)->name('show');                        // Dynamic last
         Route::get('/{id}/edit', TruckEdit::class)->name('edit');
     });
@@ -81,11 +80,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', MaintenanceShow::class)->name('index');
         Route::get('/create', MaintenanceCreate::class)->name('create');
         Route::get('/{id}/edit', MaintenanceEdit::class)->name('edit');
-    });
-
-    // Truck Logs
-    Route::prefix('truck-logs')->name('truck-logs.')->group(function () {
-        Route::get('/', TruckLogShow::class)->name('index');
     });
 
     Route::prefix('dispatch')->name('dispatch.')->group(function () {

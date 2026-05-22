@@ -19,6 +19,13 @@ class TruckList extends Component
     public $showAssignModal = false;
     public $selectedTruckId = null;
     public $showInactive = false;
+    public $activeTab = 'trucks';
+
+    // Log filters
+    public $logActionFilter = '';
+    public $logTruckFilter = '';
+    public $logDateFrom = '';
+    public $logDateTo = '';
 
     // Assignment form fields
     public $driver_id = '';
@@ -26,6 +33,12 @@ class TruckList extends Component
     public $end_time = '';
 
     protected $listeners = ['refreshTrucks' => '$refresh'];
+
+    public function setActiveTab($tab)
+    {
+        $this->activeTab = $tab;
+        $this->resetPage();
+    }
 
     public function updatingSearch()
     {
@@ -93,22 +106,22 @@ class TruckList extends Component
             'status' => 'active',
         ]);
 
-        // FIX: Use underscore, not hyphen
-        $truck->update(['status' => 'in_transit']);  // Changed from 'in-transit'
+        // Update truck status
+        $truck->update(['status' => 'in_transit']);
 
         // Get area name for location
         $areaName = $truck->currentArea ? $truck->currentArea->area_name : 'Unknown location';
 
-        // Log driver assignment with area name as location
+        // Log driver assignment
         $this->logTruckActivity(
             $this->selectedTruckId,
             'driver_assigned',
             null,
             $areaName,
-            "Driver {$driver->user->first_name} {$driver->user->last_name} assigned (License: {$driver->license_number})"
+            "Driver {$driver->user->first_name} {$driver->user->last_name} assigned (License: {$driver->licensed_number})"
         );
 
-        // Log status change with area name as location
+        // Log status change
         $this->logTruckActivity(
             $this->selectedTruckId,
             'status_change',
@@ -138,19 +151,19 @@ class TruckList extends Component
         // Get area name for location
         $areaName = $truck->currentArea ? $truck->currentArea->area_name : 'Unknown location';
 
-        // Log deactivation with area name as location
+        // Log deactivation
         $this->logTruckActivity(
             $id,
             'inactive',
-            $truck->available_ltrs,
-            $areaName, // Location is the area name
+            $truck->compartments->sum('available_ltrs'),
+            $areaName,
             "Truck deactivated and marked as inactive"
         );
 
-        // Mark the truck inactive before soft deleting it.
+        // Mark the truck inactive before soft deleting it
         $truck->update(['status' => 'inactive']);
 
-        // Soft delete the truck (sets deleted_at timestamp)
+        // Soft delete the truck
         $truck->delete();
 
         session()->flash('message', 'Truck moved to inactive successfully!');
@@ -165,12 +178,12 @@ class TruckList extends Component
 
         $truck->restore();
 
-        // Log restoration with area name as location
+        // Log restoration
         $this->logTruckActivity(
             $id,
             'status_change',
             null,
-            $areaName, // Location is the area name
+            $areaName,
             "Truck restored and set back to available status"
         );
 
@@ -179,26 +192,48 @@ class TruckList extends Component
         session()->flash('message', 'Truck restored successfully!');
     }
 
-    public function forceDeleteTruck($id)
+    public function getTotalTrucksCountProperty()
     {
-        $truck = Truck::withTrashed()->findOrFail($id);
+        return Truck::count();
+    }
 
-        // Check if truck has assignments
-        if ($truck->assignments()->exists()) {
-            session()->flash('error', 'Cannot permanently delete truck with assignment history.');
-            return;
+    public function getTotalLogsCountProperty()
+    {
+        return TruckLog::count();
+    }
+
+    public function getAllTrucksProperty()
+    {
+        return Truck::orderBy('truck_name')->get();
+    }
+
+    public function getTruckLogsProperty()
+    {
+        $query = TruckLog::with(['truck'])->orderBy('created_at', 'desc');
+
+        if ($this->logActionFilter) {
+            $query->where('action', $this->logActionFilter);
         }
 
-        // Permanently delete
-        $truck->forceDelete();
+        if ($this->logTruckFilter) {
+            $query->where('truck_id', $this->logTruckFilter);
+        }
 
-        session()->flash('message', 'Truck permanently deleted successfully!');
+        if ($this->logDateFrom) {
+            $query->whereDate('created_at', '>=', $this->logDateFrom);
+        }
+
+        if ($this->logDateTo) {
+            $query->whereDate('created_at', '<=', $this->logDateTo);
+        }
+
+        return $query->paginate(15);
     }
 
     public function render()
     {
         $query = Truck::query()
-            ->with(['currentArea', 'currentAssignment.driver.user']);
+            ->with(['currentArea', 'currentAssignment.driver.user', 'compartments']);
 
         // Show inactive trucks if toggle is on
         if ($this->showInactive) {
@@ -232,6 +267,10 @@ class TruckList extends Component
         return view('livewire.truck-management.truck-list', [
             'trucks' => $trucks,
             'drivers' => $drivers,
+            'truckLogs' => $this->truckLogs,
+            'totalTrucksCount' => $this->totalTrucksCount,
+            'totalLogsCount' => $this->totalLogsCount,
+            'allTrucks' => $this->allTrucks,
         ]);
     }
 }
