@@ -200,11 +200,8 @@ class AreaList extends Component
             });
         }
 
-        // Sort: Active first (by created_at desc), then inactive (by created_at desc)
-        $sortedAreas = $areas->sortByDesc(function ($area) {
-            // Active items get higher priority (1), inactive get lower priority (0)
-            $priority = $area->status === 'active' ? 1 : 0;
-            // Combine priority with created_at timestamp for sorting
+        $sortedAreas = $areas->sortBy(function ($area) {
+            $priority = $area->status === 'active' ? 0 : 1; // Reverse priority so active comes first
             return $priority . '_' . $area->created_at->timestamp;
         })->values();
 
@@ -249,11 +246,8 @@ class AreaList extends Component
         // Get all results
         $stations = $query->get();
 
-        // Sort: Active first (by created_at desc), then inactive (by created_at desc)
-        $sortedStations = $stations->sortByDesc(function ($station) {
-            // Active items get higher priority (1), inactive get lower priority (0)
-            $priority = $station->status === 'active' ? 1 : 0;
-            // Combine priority with created_at timestamp for sorting
+        $sortedStations = $stations->sortBy(function ($station) {
+            $priority = $station->status === 'active' ? 0 : 1; // Reverse priority so active comes first
             return $priority . '_' . $station->created_at->timestamp;
         })->values();
 

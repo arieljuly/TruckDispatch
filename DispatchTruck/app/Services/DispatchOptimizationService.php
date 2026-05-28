@@ -4,278 +4,170 @@ namespace App\Services;
 
 use App\Models\Truck;
 use App\Models\Area;
+use App\Models\Station;
 use App\Models\DistanceMatrix;
+use App\Models\TruckCompartment;
+use App\Models\FuelType;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class DispatchOptimizationService
 {
-    protected $fuelEfficiency = 6.0; // km per liter
+    protected $apiUrl;
+    protected $timeout;
+    protected $fuelEfficiency;
 
-    /**
-     * Set fuel efficiency for calculations
-     */
-    public function setFuelEfficiency(float $efficiency): void
+    public function __construct()
     {
-        $this->fuelEfficiency = $efficiency;
-        Log::debug('Fuel efficiency set for optimization', ['efficiency' => $efficiency]);
+        $this->apiUrl = config('services.dispatch_api.url', 'http://localhost:8002');
+        $this->timeout = config('services.dispatch_api.timeout', 30);
+        $this->fuelEfficiency = config('services.dispatch_api.fuel_efficiency', 10.0);
     }
 
     /**
-     * Get truck recommendations based on AVAILABLE fuel AND distance to area
+     * Get truck recommendations using greedy algorithm
      */
     public function getRecommendations(float $requiredFuel, ?int $areaId = null, int $limit = 5): Collection
     {
-        Log::info('===== STARTING TRUCK RECOMMENDATION =====', [
+        Log::info('Getting truck recommendations (Greedy Algorithm)', [
             'required_fuel' => $requiredFuel,
             'target_area' => $areaId,
-            'fuel_efficiency' => $this->fuelEfficiency,
             'limit' => $limit
         ]);
 
-        // Get target area
-        $targetArea = $areaId ? Area::where('id', $areaId)->where('status', 'active')->first() : null;
-
-        if (!$targetArea && $areaId) {
-            Log::error('Target area not found or inactive', ['area_id' => $areaId]);
-            return collect();
-        }
-
-        Log::info('Target area details', [
-            'id' => $targetArea?->id,
-            'name' => $targetArea?->area_name,
-            'required_liters' => $targetArea?->required_liters
-        ]);
-
-        // Get all available trucks
-        $trucks = Truck::where('status', 'available')
+        // Get all available trucks with their compartments
+        $trucks = Truck::with(['compartments.fuelType', 'currentArea'])
+            ->where('status', 'available')
             ->whereNull('deleted_at')
             ->get();
 
-        Log::info('Available trucks found', [
-            'count' => $trucks->count(),
-            'trucks' => $trucks->map(function ($truck) {
-                return [
-                    'id' => $truck->id,
-                    'name' => $truck->truck_name,
-                    'available_ltrs' => $truck->available_ltrs,
-                    'current_area_id' => $truck->current_area_id
-                ];
-            })->toArray()
-        ]);
-
         if ($trucks->isEmpty()) {
-            Log::warning('No available trucks found in the system');
             return collect();
         }
 
         $recommendations = [];
 
         foreach ($trucks as $truck) {
-            Log::info('---- Analyzing truck ----', [
-                'truck_id' => $truck->id,
-                'truck_name' => $truck->truck_name,
-                'available_fuel' => $truck->available_ltrs,
-                'current_area_id' => $truck->current_area_id
-            ]);
+            // Calculate total available fuel across compartments
+            $availableLtrs = $truck->compartments->sum('available_ltrs');
 
             // Calculate distance to target area
             $distanceToArea = $this->getDistanceBetweenAreas($truck->current_area_id, $areaId);
 
-            Log::info('Distance calculation result', [
-                'truck_id' => $truck->id,
-                'from_area' => $truck->current_area_id,
-                'to_area' => $areaId,
-                'distance_km' => $distanceToArea
-            ]);
-
             // Calculate fuel needed to reach destination
-            $fuelToReach = $this->calculateFuelToReachArea($distanceToArea);
+            $fuelToReach = $this->calculateFuelToReachArea($distanceToArea, $truck);
 
             // Calculate net available fuel at destination
-            $netAvailableFuel = $truck->available_ltrs - $fuelToReach;
+            $netAvailable = $availableLtrs - $fuelToReach;
 
-            Log::info('Fuel calculations', [
-                'truck_id' => $truck->id,
-                'available_fuel' => $truck->available_ltrs,
-                'travel_distance' => $distanceToArea,
-                'fuel_for_travel' => $fuelToReach,
-                'net_available_at_destination' => $netAvailableFuel,
-                'required_fuel_at_destination' => $requiredFuel,
-                'difference' => $netAvailableFuel - $requiredFuel
-            ]);
+            // Check if truck can fulfill the requirement
+            if ($netAvailable >= $requiredFuel && $fuelToReach <= $availableLtrs) {
+                // Get fuel types available in this truck
+                $fuelTypes = $truck->compartments
+                    ->filter(function ($comp) {
+                        return $comp->available_ltrs > 0; })
+                    ->map(function ($comp) {
+                        return [
+                            'fuel_type' => $comp->fuelType->fuel_code ?? 'unknown',
+                            'available_ltrs' => $comp->available_ltrs
+                        ];
+                    })
+                    ->values();
 
-            // Check if truck has enough fuel to reach AND fulfill requirement
-            $canReach = $fuelToReach <= $truck->available_ltrs;
-            $canFulfill = $netAvailableFuel >= $requiredFuel;
-
-            if ($canReach && $canFulfill) {
-                $excessFuel = $netAvailableFuel - $requiredFuel;
-                $excessPercentage = ($excessFuel / $requiredFuel) * 100;
-
-                $recommendation = (object) [
+                $recommendations[] = (object) [
                     'truck' => $truck,
                     'required_fuel' => $requiredFuel,
-                    'available_fuel' => $truck->available_ltrs,
+                    'available_fuel' => $availableLtrs,
                     'fuel_to_reach' => round($fuelToReach, 2),
-                    'net_available' => round($netAvailableFuel, 2),
-                    'excess_capacity' => round($excessFuel, 2),
-                    'excess_percentage' => round($excessPercentage, 1),
+                    'net_available' => round($netAvailable, 2),
                     'distance_km' => round($distanceToArea, 2),
+                    'fuel_types' => $fuelTypes,
                     'priority_score' => $this->calculatePriorityScore($truck, $requiredFuel, $fuelToReach, $distanceToArea),
+                    'efficiency_km_per_l' => $this->getTruckEfficiency($truck)
                 ];
-
-                $recommendations[] = $recommendation;
-
-                Log::info('✅ Truck QUALIFIED', [
-                    'truck_id' => $truck->id,
-                    'truck_name' => $truck->truck_name,
-                    'net_available' => $netAvailableFuel,
-                    'excess' => $excessFuel,
-                    'excess_percentage' => $excessPercentage,
-                    'priority_score' => $recommendation->priority_score
-                ]);
-            } else {
-                $reason = !$canReach ? "Not enough fuel to reach destination (needs {$fuelToReach}L, has {$truck->available_ltrs}L)"
-                    : "Not enough fuel after travel (net {$netAvailableFuel}L, needs {$requiredFuel}L)";
-
-                Log::info('❌ Truck did NOT qualify', [
-                    'truck_id' => $truck->id,
-                    'truck_name' => $truck->truck_name,
-                    'reason' => $reason,
-                    'available' => $truck->available_ltrs,
-                    'fuel_to_reach' => $fuelToReach,
-                    'net_available' => $netAvailableFuel,
-                    'required' => $requiredFuel,
-                    'shortage' => $requiredFuel - $netAvailableFuel
-                ]);
             }
         }
 
-        // Sort by priority score (higher is better)
+        // Sort by priority score
         usort($recommendations, function ($a, $b) {
             return $b->priority_score <=> $a->priority_score;
         });
 
-        // Take only top N recommendations
-        $topRecommendations = array_slice($recommendations, 0, $limit);
-
-        Log::info('===== RECOMMENDATION SUMMARY =====', [
-            'total_trucks_analyzed' => $trucks->count(),
-            'qualified_trucks' => count($recommendations),
-            'returning_trucks' => count($topRecommendations),
-            'required_fuel' => $requiredFuel,
-            'target_area' => $areaId,
-            'top_recommendation' => !empty($topRecommendations) ? [
-                'truck_id' => $topRecommendations[0]->truck->id,
-                'truck_name' => $topRecommendations[0]->truck->truck_name,
-                'net_available' => $topRecommendations[0]->net_available,
-                'distance_km' => $topRecommendations[0]->distance_km,
-                'fuel_to_reach' => $topRecommendations[0]->fuel_to_reach,
-                'priority_score' => $topRecommendations[0]->priority_score
-            ] : 'NONE'
-        ]);
-
-        return collect($topRecommendations);
+        return collect(array_slice($recommendations, 0, $limit));
     }
 
     /**
-     * Calculate fuel needed to reach target area based on distance
+     * Get truck efficiency (km per liter)
      */
-    protected function calculateFuelToReachArea(float $distanceKm): float
+    protected function getTruckEfficiency(Truck $truck): float
+    {
+        // You can store efficiency in trucks table or calculate from logs
+        return $truck->fuel_efficiency_km_per_l ?? $this->fuelEfficiency;
+    }
+
+    /**
+     * Calculate fuel needed to reach target area
+     */
+    protected function calculateFuelToReachArea(float $distanceKm, Truck $truck): float
     {
         if ($distanceKm <= 0) {
             return 0;
         }
 
-        $fuelNeeded = $distanceKm / $this->fuelEfficiency;
-
-        Log::debug('Travel fuel calculation', [
-            'distance_km' => $distanceKm,
-            'efficiency_km_per_liter' => $this->fuelEfficiency,
-            'fuel_needed_liters' => round($fuelNeeded, 2)
-        ]);
-
-        return $fuelNeeded;
+        $efficiency = $this->getTruckEfficiency($truck);
+        return $distanceKm / $efficiency;
     }
 
     /**
-     * Get distance between two areas from distance_matrix table
+     * Get distance between areas from distance matrix
      */
     public function getDistanceBetweenAreas(?int $fromAreaId, ?int $toAreaId): float
     {
-        // If either area ID is missing, return default
         if (!$fromAreaId || !$toAreaId) {
-            Log::debug('Missing area IDs for distance calculation', [
-                'from_area_id' => $fromAreaId,
-                'to_area_id' => $toAreaId
-            ]);
-            return 50; // Default 50km
+            return 50;
         }
 
-        // If same area, distance is 0
         if ($fromAreaId == $toAreaId) {
-            Log::debug('Same area, distance is 0', [
-                'area_id' => $fromAreaId
-            ]);
             return 0;
         }
 
-        // Query the distance_matrix table for the distance
-        $distanceRecord = DistanceMatrix::where('from_area_id', $fromAreaId)
+        // Query distance matrix
+        $distance = DistanceMatrix::where('from_area_id', $fromAreaId)
             ->where('to_area_id', $toAreaId)
-            ->first();
+            ->value('distance');
 
-        if ($distanceRecord && $distanceRecord->distance !== null) {
-            Log::debug('Distance found in matrix', [
-                'from_area' => $fromAreaId,
-                'to_area' => $toAreaId,
-                'distance_km' => $distanceRecord->distance
-            ]);
-            return (float) $distanceRecord->distance;
+        if ($distance !== null) {
+            return (float) $distance;
         }
 
-        // Try reverse direction (distance is usually symmetric)
-        $reverseRecord = DistanceMatrix::where('from_area_id', $toAreaId)
+        // Try reverse direction
+        $reverseDistance = DistanceMatrix::where('from_area_id', $toAreaId)
             ->where('to_area_id', $fromAreaId)
-            ->first();
+            ->value('distance');
 
-        if ($reverseRecord && $reverseRecord->distance !== null) {
-            Log::debug('Distance found in reverse matrix (using same value)', [
-                'from_area' => $fromAreaId,
-                'to_area' => $toAreaId,
-                'distance_km' => $reverseRecord->distance
-            ]);
-            return (float) $reverseRecord->distance;
+        if ($reverseDistance !== null) {
+            return (float) $reverseDistance;
         }
 
-        // Default fallback distance if no matrix entry found
-        Log::warning('Distance not found in distance_matrix table, using default', [
-            'from_area' => $fromAreaId,
-            'to_area' => $toAreaId,
-            'default_distance_km' => 50
-        ]);
-
-        return 50; // Default 50km fallback
+        return 50; // Default fallback
     }
 
     /**
-     * Calculate priority score (0-100) for truck ranking
+     * Calculate priority score for truck ranking
      */
     protected function calculatePriorityScore(Truck $truck, float $requiredFuel, float $fuelToReach, float $distance): float
     {
         $score = 0;
-
-        // Factor 1: Fuel efficiency (less waste is better)
-        $netAvailable = $truck->available_ltrs - $fuelToReach;
+        $availableLtrs = $truck->compartments->sum('available_ltrs');
+        $netAvailable = $availableLtrs - $fuelToReach;
         $excessFuel = $netAvailable - $requiredFuel;
-        $excessRatio = $excessFuel / $requiredFuel;
+        $excessRatio = $requiredFuel > 0 ? $excessFuel / $requiredFuel : 0;
 
-        // Perfect match (0-10% excess) gets highest score
-        if ($excessRatio <= 0.1) {
+        // Factor 1: Fuel efficiency (perfect match gets highest score)
+        if ($excessRatio <= 0.1 && $excessRatio >= -0.05) {
             $score += 50;
-            Log::debug('Perfect match bonus', ['excess_ratio' => $excessRatio]);
         } elseif ($excessRatio <= 0.25) {
             $score += 40;
         } elseif ($excessRatio <= 0.5) {
@@ -286,10 +178,9 @@ class DispatchOptimizationService
             $score += 10;
         }
 
-        // Factor 2: Distance to area (shorter is better)
+        // Factor 2: Distance to area
         if ($distance == 0) {
-            $score += 30; // Same area
-            Log::debug('Same area bonus', ['distance' => $distance]);
+            $score += 30;
         } elseif ($distance <= 10) {
             $score += 25;
         } elseif ($distance <= 30) {
@@ -300,24 +191,376 @@ class DispatchOptimizationService
             $score += 5;
         }
 
-        // Factor 3: Bonus for having exactly the right fuel (minimal waste)
-        if ($excessFuel >= 0 && $excessFuel <= ($requiredFuel * 0.1)) {
-            $score += 20;
-            Log::debug('Minimal waste bonus', ['excess_fuel' => $excessFuel]);
+        // Factor 3: Truck efficiency bonus
+        $efficiency = $this->getTruckEfficiency($truck);
+        if ($efficiency >= 12) {
+            $score += 15;
+        } elseif ($efficiency >= 10) {
+            $score += 10;
+        } elseif ($efficiency >= 8) {
+            $score += 5;
         }
 
-        $finalScore = min(100, $score);
+        return min(100, $score);
+    }
 
-        Log::debug('Priority score calculation', [
-            'truck_id' => $truck->id,
-            'truck_name' => $truck->truck_name,
-            'excess_fuel' => round($excessFuel, 2),
-            'excess_ratio' => round($excessRatio, 2),
+    /**
+     * Validate if truck can serve a station (7 rules)
+     */
+    public function validateTruckForStation(Truck $truck, Station $station, int $currentLocationId, array $options = []): array
+    {
+        $defaults = [
+            'driver_hours_used' => 0,
+            'max_driver_hours' => 11
+        ];
+        $options = array_merge($defaults, $options);
+
+        $validationResults = [];
+
+        // Rule 1: Truck must be available
+        $rule1 = $truck->status === 'available';
+        $validationResults['truck_available'] = $rule1;
+        if (!$rule1) {
+            return $this->validationResult(false, 'SKIP', "Truck is {$truck->status}", $validationResults);
+        }
+
+        // Rule 2: Truck must have remaining capacity
+        $totalAvailable = $truck->compartments->sum('available_ltrs');
+        $rule2 = $totalAvailable > 0;
+        $validationResults['has_capacity'] = $rule2;
+        if (!$rule2) {
+            return $this->validationResult(false, 'SKIP', 'No available capacity', $validationResults);
+        }
+
+        // Rule 3: Fuel type compatibility
+        $rule3 = true;
+        $fuelCheckDetails = [];
+
+        // Get required fuel from station's pending purchase orders
+        $requiredFuels = $this->getStationRequiredFuels($station);
+
+        foreach ($requiredFuels as $fuelType => $requiredQty) {
+            $availableForFuel = $truck->compartments
+                ->where('current_fuel_type_id', $this->getFuelTypeId($fuelType))
+                ->sum('available_ltrs');
+
+            if ($availableForFuel == 0) {
+                $rule3 = false;
+                $fuelCheckDetails[] = "No {$fuelType} available";
+            } elseif ($availableForFuel < $requiredQty) {
+                $rule3 = false;
+                $fuelCheckDetails[] = "Insufficient {$fuelType}: need {$requiredQty}L, have {$availableForFuel}L";
+            }
+        }
+
+        $validationResults['fuel_compatible'] = $rule3;
+        if (!$rule3) {
+            return $this->validationResult(false, 'REASSIGN', implode(', ', $fuelCheckDetails), $validationResults);
+        }
+
+        // Rule 4: Distance feasibility
+        $distance = $this->getDistanceBetweenAreas($currentLocationId, $station->area_id);
+        $efficiency = $this->getTruckEfficiency($truck);
+        $fuelToReach = $distance / $efficiency;
+
+        $rule4 = $fuelToReach <= $totalAvailable;
+        $validationResults['can_reach'] = $rule4;
+        if (!$rule4) {
+            return $this->validationResult(false, 'SKIP', "Cannot reach: needs {$fuelToReach}L, has {$totalAvailable}L", $validationResults);
+        }
+
+        // Rule 5: Cost effectiveness (placeholder - will be checked in route optimization)
+        $rule5 = true;
+        $validationResults['cost_effective'] = $rule5;
+
+        // Rule 6: Driver hours
+        $estimatedHours = $distance / 50;
+        $rule6 = $options['driver_hours_used'] + $estimatedHours <= $options['max_driver_hours'];
+        $validationResults['driver_hours_ok'] = $rule6;
+        if (!$rule6) {
+            return $this->validationResult(false, 'REASSIGN', "Driver hours exceeded", $validationResults);
+        }
+
+        // Rule 7: No higher priority (handled by caller)
+        $validationResults['no_higher_priority'] = true;
+
+        $netAvailable = $totalAvailable - $fuelToReach;
+
+        return $this->validationResult(true, 'ASSIGN', 'All validation passed', $validationResults, [
             'distance_km' => $distance,
-            'final_score' => $finalScore
+            'fuel_to_reach' => round($fuelToReach, 2),
+            'net_available' => round($netAvailable, 2)
         ]);
+    }
 
-        return $finalScore;
+    /**
+     * Validate truck's ability to continue to next station
+     */
+    public function validateContinueToNextStation(
+        Truck $truck,
+        Station $currentStation,
+        Station $nextStation,
+        float $remainingCapacity,
+        Collection $alternativeTrucks
+    ): array {
+        $distance = $this->getDistanceBetweenAreas($currentStation->area_id, $nextStation->area_id);
+
+        // Check remaining capacity
+        if ($remainingCapacity <= 0) {
+            return ['should_continue' => false, 'reason' => 'No remaining capacity'];
+        }
+
+        // Check fuel type for next station
+        $nextRequiredFuels = $this->getStationRequiredFuels($nextStation);
+        foreach ($nextRequiredFuels as $fuelType => $requiredQty) {
+            $available = $truck->compartments
+                ->where('current_fuel_type_id', $this->getFuelTypeId($fuelType))
+                ->sum('available_ltrs');
+
+            if ($available < $requiredQty) {
+                return ['should_continue' => false, 'reason' => "Insufficient {$fuelType} for next station"];
+            }
+        }
+
+        // Check if distance is acceptable
+        $maxDistance = 150;
+        if ($distance > $maxDistance) {
+            return ['should_continue' => false, 'reason' => "Next station too far ({$distance}km)"];
+        }
+
+        // Cost effectiveness check
+        $efficiency = $this->getTruckEfficiency($truck);
+        $currentCost = $distance / $efficiency;
+
+        $minAlternativeCost = PHP_FLOAT_MAX;
+        foreach ($alternativeTrucks as $altTruck) {
+            if ($altTruck->id != $truck->id) {
+                $altEfficiency = $this->getTruckEfficiency($altTruck);
+                $altCost = $distance / $altEfficiency;
+                if ($altCost < $minAlternativeCost) {
+                    $minAlternativeCost = $altCost;
+                }
+            }
+        }
+
+        $savings = $minAlternativeCost - $currentCost;
+        $threshold = 0.2; // 20%
+
+        if ($minAlternativeCost != PHP_FLOAT_MAX && $currentCost > $minAlternativeCost * (1 + $threshold)) {
+            return [
+                'should_continue' => false,
+                'reason' => "Cheaper to use another truck (cost: {$currentCost}L vs {$minAlternativeCost}L)",
+                'savings' => round($savings, 2),
+                'current_cost' => round($currentCost, 2),
+                'alternative_cost' => round($minAlternativeCost, 2)
+            ];
+        }
+
+        return [
+            'should_continue' => true,
+            'reason' => "Continue OK - {$currentCost}L fuel needed",
+            'savings' => round($savings, 2),
+            'current_cost' => round($currentCost, 2),
+            'alternative_cost' => round($minAlternativeCost, 2)
+        ];
+    }
+
+    /**
+     * Get required fuels for a station from pending purchase orders
+     */
+    protected function getStationRequiredFuels(Station $station): array
+    {
+        $required = [];
+
+        foreach ($station->purchaseOrders as $po) {
+            foreach ($po->items as $item) {
+                $remaining = $item->qty_liters - $item->delivered_ltrs;
+                if ($remaining > 0 && $item->fuelType) {
+                    $fuelCode = $item->fuelType->fuel_code;
+                    $required[$fuelCode] = ($required[$fuelCode] ?? 0) + $remaining;
+                }
+            }
+        }
+
+        return $required;
+    }
+
+    /**
+     * Get fuel type ID by code
+     */
+    protected function getFuelTypeId(string $fuelCode): ?int
+    {
+        return FuelType::where('fuel_code', $fuelCode)->value('id');
+    }
+
+    /**
+     * Format validation result
+     */
+    protected function validationResult(bool $canAssign, string $decision, string $reason, array $checks, array $extra = []): array
+    {
+        return array_merge([
+            'can_assign' => $canAssign,
+            'decision' => $decision,
+            'reason' => $reason,
+            'validation_checks' => $checks
+        ], $extra);
+    }
+
+    /**
+     * Call Python API for full optimization
+     */
+    public function runGreedyOptimization(
+        Collection $trucks,
+        Collection $areas,
+        Collection $distances,
+        ?int $startAreaId = null,
+        string $optimizationMode = 'greedy'
+    ): ?array {
+        try {
+            // Format trucks for API
+            $formattedTrucks = $trucks->map(function ($truck) {
+                return [
+                    'id' => $truck->id,
+                    'name' => $truck->truck_name,
+                    'plate_number' => $truck->plate_number,
+                    'current_area_id' => $truck->current_area_id,
+                    'max_capacity_ltrs' => $truck->max_capacity_ltrs,
+                    'fuel_efficiency_km_per_l' => $this->getTruckEfficiency($truck),
+                    'status' => $truck->status,
+                    'available_ltrs' => $truck->compartments->sum('available_ltrs'),
+                    'compartments' => $truck->compartments->map(function ($comp) {
+                        return [
+                            'compartment_no' => $comp->compartment_no,
+                            'fuel_type' => $comp->fuelType->fuel_code ?? 'diesel',
+                            'capacity_ltrs' => $comp->capacity_ltrs,
+                            'loaded_ltrs' => $comp->loaded_ltrs,
+                            'available_ltrs' => $comp->available_ltrs
+                        ];
+                    })->toArray()
+                ];
+            })->toArray();
+
+            // Format areas with stations
+            $formattedAreas = $areas->map(function ($area) {
+                return [
+                    'id' => $area->id,
+                    'name' => $area->area_name,
+                    'stations' => $area->stations->map(function ($station) {
+                        return [
+                            'id' => $station->id,
+                            'name' => $station->station_name,
+                            'area_id' => $station->area_id,
+                            'required_fuels' => $this->getStationRequiredFuels($station)
+                        ];
+                    })->toArray()
+                ];
+            })->toArray();
+
+            // Format distances
+            $formattedDistances = $distances->map(function ($dist) {
+                return [
+                    'from_area_id' => $dist->from_area_id,
+                    'to_area_id' => $dist->to_area_id,
+                    'distance_km' => $dist->distance
+                ];
+            })->toArray();
+
+            $payload = [
+                'trucks' => $formattedTrucks,
+                'areas' => $formattedAreas,
+                'distances' => $formattedDistances,
+                'start_area_id' => $startAreaId,
+                'optimization_mode' => $optimizationMode
+            ];
+
+            Log::info('Calling greedy optimization API', [
+                'url' => $this->apiUrl . '/api/v2/dispatch/optimize',
+                'trucks_count' => count($formattedTrucks),
+                'areas_count' => count($formattedAreas),
+                'mode' => $optimizationMode
+            ]);
+
+            $response = Http::timeout($this->timeout)
+                ->post($this->apiUrl . '/api/v2/dispatch/optimize', $payload);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                Log::info('Optimization successful', [
+                    'session_id' => $result['session_id'],
+                    'fulfillment_rate' => $result['summary']['fulfillment_rate_percent']
+                ]);
+                return $result;
+            } else {
+                Log::error('Optimization API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                return null;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Optimization API exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Validate truck for station via API
+     */
+    public function apiValidateTruckForStation(
+        Truck $truck,
+        Station $station,
+        int $currentLocationId,
+        float $driverHoursUsed = 0
+    ): ?array {
+        try {
+            $payload = [
+                'truck' => [
+                    'id' => $truck->id,
+                    'name' => $truck->truck_name,
+                    'plate_number' => $truck->plate_number,
+                    'current_area_id' => $truck->current_area_id,
+                    'max_capacity_ltrs' => $truck->max_capacity_ltrs,
+                    'fuel_efficiency_km_per_l' => $this->getTruckEfficiency($truck),
+                    'status' => $truck->status,
+                    'available_ltrs' => $truck->compartments->sum('available_ltrs'),
+                    'compartments' => $truck->compartments->map(function ($comp) {
+                        return [
+                            'compartment_no' => $comp->compartment_no,
+                            'fuel_type' => $comp->fuelType->fuel_code ?? 'diesel',
+                            'capacity_ltrs' => $comp->capacity_ltrs,
+                            'loaded_ltrs' => $comp->loaded_ltrs,
+                            'available_ltrs' => $comp->available_ltrs
+                        ];
+                    })->toArray()
+                ],
+                'station' => [
+                    'id' => $station->id,
+                    'name' => $station->station_name,
+                    'area_id' => $station->area_id,
+                    'required_fuels' => $this->getStationRequiredFuels($station)
+                ],
+                'current_location_id' => $currentLocationId,
+                'driver_hours_used' => $driverHoursUsed,
+                'max_driver_hours' => 11
+            ];
+
+            $response = Http::timeout($this->timeout)
+                ->post($this->apiUrl . '/api/v2/dispatch/validate', $payload);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error('Validation API error', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     /**
@@ -326,18 +569,33 @@ class DispatchOptimizationService
     public function canTruckFulfill(Truck $truck, float $requiredFuel, ?int $areaId = null): bool
     {
         $distanceToArea = $areaId ? $this->getDistanceBetweenAreas($truck->current_area_id, $areaId) : 0;
-        $fuelToReach = $this->calculateFuelToReachArea($distanceToArea);
-        $netAvailable = $truck->available_ltrs - $fuelToReach;
+        $fuelToReach = $this->calculateFuelToReachArea($distanceToArea, $truck);
+        $totalAvailable = $truck->compartments->sum('available_ltrs');
+        $netAvailable = $totalAvailable - $fuelToReach;
 
-        $canFulfill = $netAvailable >= $requiredFuel;
+        return $netAvailable >= $requiredFuel;
+    }
 
-        Log::info('Truck fulfill check', [
-            'truck_id' => $truck->id,
-            'required' => $requiredFuel,
-            'net_available' => $netAvailable,
-            'can_fulfill' => $canFulfill
-        ]);
-
-        return $canFulfill;
+    /**
+     * Format recommendations for display
+     */
+    public function formatRecommendationsForDisplay(Collection $recommendations): array
+    {
+        return $recommendations->map(function ($rec) {
+            return [
+                'truck_id' => $rec->truck->id,
+                'truck_name' => $rec->truck->truck_name,
+                'plate_number' => $rec->truck->plate_number,
+                'available_fuel' => $rec->available_fuel,
+                'net_available_at_destination' => $rec->net_available,
+                'fuel_to_reach' => $rec->fuel_to_reach,
+                'distance_km' => $rec->distance_km,
+                'priority_score' => $rec->priority_score,
+                'efficiency' => $rec->efficiency_km_per_l,
+                'fuel_types' => $rec->fuel_types,
+                'can_fulfill' => $rec->net_available >= $rec->required_fuel,
+                'excess_percentage' => round(($rec->net_available - $rec->required_fuel) / $rec->required_fuel * 100, 1)
+            ];
+        })->toArray();
     }
 }

@@ -4,13 +4,16 @@ namespace App\Services;
 
 use App\Models\DispatchSession;
 use App\Models\DispatchAllocation;
+use App\Models\DispatchAllocationItem;
 use App\Models\Truck;
 use App\Models\Area;
+use App\Models\Station;
 use App\Models\DeliveryRequest;
+use App\Models\PurchaseOrderItem;
+use App\Models\TruckCompartment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 
 class DispatchManagementService
 {
@@ -26,315 +29,324 @@ class DispatchManagementService
     }
 
     /**
-     * Create a new dispatch session with AI recommendation
+     * Run complete greedy optimization for area
      */
-    public function createDispatchSession(array $data): DispatchSession
+    public function runGreedyOptimizationForArea(Area $area, array $options = []): ?array
     {
-        return DB::transaction(function () use ($data) {
-            // Check if prediction data is already provided (from Livewire component)
-            $hasPredictionData = isset($data['predicted_fuel_liters']) && isset($data['prediction_confidence']);
+        $defaults = [
+            'start_area_id' => null,
+            'optimization_mode' => 'greedy',
+            'include_all_trucks' => true
+        ];
+        $options = array_merge($defaults, $options);
 
-            $prediction = null;
-            $recommendedTruck = null;
+        // Get all available trucks
+        $trucks = Truck::with(['compartments.fuelType', 'currentArea'])
+            ->where('status', 'available')
+            ->whereNull('deleted_at')
+            ->get();
 
-            if (!$hasPredictionData) {
-                // Get fuel prediction from service
-                $prediction = $this->fuelPredictionService->predict([
-                    'distance_km' => $data['distance_km'],
-                    'actual_duration_hours' => $data['actual_duration_hours'],
-                    'average_mpg' => $data['average_mpg'] ?? null,
-                    'idle_time_hours' => $data['idle_time_hours'] ?? 0,
-                    'detention_minutes' => $data['detention_minutes'] ?? 0,
-                    'delay_minutes' => $data['delay_minutes'] ?? 0,
-                    'on_time_flag' => $data['on_time_flag'] ?? true,
-                ]);
+        if ($trucks->isEmpty()) {
+            Log::warning('No available trucks for optimization');
+            return null;
+        }
 
-                // Get truck recommendation
-                $recommendedTruck = $this->optimizationService->recommendTruck(
-                    $prediction['predicted_fuel_liters'],
-                    $data['area_id'] ?? null,
-                    $data['filters'] ?? []
-                );
-            }
+        // Get all stations with pending requirements in this area
+        $stations = $area->stations()
+            ->with(['purchaseOrders.items.fuelType'])
+            ->get()
+            ->filter(function ($station) {
+                // Only include stations with pending deliveries
+                $hasPending = false;
+                foreach ($station->purchaseOrders as $po) {
+                    foreach ($po->items as $item) {
+                        if (($item->qty_liters - $item->delivered_ltrs) > 0) {
+                            $hasPending = true;
+                            break;
+                        }
+                    }
+                }
+                return $hasPending;
+            });
 
-            // Prepare notes with fallback indicator
-            $notes = $data['notes'] ?? null;
-            $isFallback = $data['is_fallback'] ?? ($prediction['is_fallback'] ?? false);
+        if ($stations->isEmpty()) {
+            Log::info('No stations with pending requirements in area', ['area_id' => $area->id]);
+            return null;
+        }
 
-            if ($isFallback) {
-                $notes = ($notes ? $notes . ' ' : '') . '[Fallback prediction used]';
-            }
+        // Get distance matrix
+        $distances = DistanceMatrix::all();
 
-            // Get prediction values (either from provided data or from prediction service)
-            $predictedFuelLiters = $data['predicted_fuel_liters'] ?? ($prediction['predicted_fuel_liters'] ?? null);
-            $predictionConfidence = $data['prediction_confidence'] ?? ($prediction['confidence_score'] ?? null);
-            $predictionModelVersion = $data['prediction_model_version'] ?? ($prediction['model_version'] ?? null);
-            $predictionIntervalLower = $data['prediction_interval_lower'] ?? ($prediction['prediction_interval_lower'] ?? null);
-            $predictionIntervalUpper = $data['prediction_interval_upper'] ?? ($prediction['prediction_interval_upper'] ?? null);
+        // Run Python optimization
+        $result = $this->optimizationService->runGreedyOptimization(
+            $trucks,
+            collect([$area]),
+            $distances,
+            $options['start_area_id'],
+            $options['optimization_mode']
+        );
 
-            // If intervals not provided but we have confidence, calculate them
-            if (($predictionIntervalLower === null || $predictionIntervalUpper === null) && $predictedFuelLiters && $predictionConfidence) {
-                $marginOfError = $predictedFuelLiters * (1 - $predictionConfidence);
-                $predictionIntervalLower = $predictedFuelLiters - $marginOfError;
-                $predictionIntervalUpper = $predictedFuelLiters + $marginOfError;
-            }
+        if ($result) {
+            // Log the optimization result
+            Log::info('Greedy optimization completed', [
+                'area_id' => $area->id,
+                'session_id' => $result['session_id'],
+                'fulfillment_rate' => $result['summary']['fulfillment_rate_percent'],
+                'trips' => count($result['assignments'])
+            ]);
 
-            // Create dispatch session with all fields
-            $sessionData = [
-                'algorithm_used' => $data['algorithm_used'] ?? 'greedy',
-                'total_demand' => $predictedFuelLiters,
-                'total_supply' => $recommendedTruck ? $recommendedTruck->available_ltrs : ($data['total_supply'] ?? 0),
+            // Store dispatch session
+            $session = $this->createDispatchSessionFromOptimizationResult($result, $area);
+
+            $result['db_session_id'] = $session->id;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Create dispatch session from optimization result
+     */
+    protected function createDispatchSessionFromOptimizationResult(array $result, Area $area): DispatchSession
+    {
+        return DB::transaction(function () use ($result, $area) {
+            $summary = $result['summary'];
+
+            $session = DispatchSession::create([
+                'algorithm_used' => 'greedy_optimization',
+                'total_demand' => $summary['total_demand_liters'],
+                'total_supply' => $summary['total_delivered_liters'],
                 'status' => 'pending',
-                'notes' => $notes,
-                'recommended_truck_id' => $data['recommended_truck_id'] ?? ($recommendedTruck?->id),
-                'predicted_fuel_liters' => $predictedFuelLiters,
-                'prediction_confidence' => $predictionConfidence,
-                'prediction_interval_lower' => $predictionIntervalLower,
-                'prediction_interval_upper' => $predictionIntervalUpper,
-                'optimization_method' => $data['optimization_method'] ?? ($recommendedTruck ? 'ai_ml' : null),
-                'prediction_model_version' => $predictionModelVersion,
-                'distance_km' => $data['distance_km'],
-                'actual_duration_hours' => $data['actual_duration_hours'],
-                'average_mpg' => $data['average_mpg'] ?? null,
-                'idle_time_hours' => $data['idle_time_hours'] ?? 0,
-                'detention_minutes' => $data['detention_minutes'] ?? 0,
-                'delay_minutes' => $data['delay_minutes'] ?? 0,
-                'on_time_flag' => $data['on_time_flag'] ?? true,
+                'notes' => "Greedy optimization from Python API - Session {$result['session_id']}",
+                'optimization_method' => 'ai_ml',
+                'distance_km' => $summary['total_distance_km'],
+                'area_id' => $area->id,
+            ]);
+
+            // Create allocations from assignments
+            foreach ($result['assignments'] as $assignment) {
+                $truck = Truck::find($assignment['truck_id']);
+
+                if ($truck) {
+                    $allocation = DispatchAllocation::create([
+                        'dispatch_session_id' => $session->id,
+                        'truck_id' => $assignment['truck_id'],
+                        'liters_allocated' => $assignment['total_delivered'],
+                        'distance_used' => $assignment['total_distance_km'],
+                        'status' => 'planned'
+                    ]);
+
+                    // Create allocation items for each stop
+                    foreach ($assignment['stops'] as $stop) {
+                        // Find the purchase order item for this station and fuel type
+                        $poItem = $this->findPendingPurchaseOrderItem(
+                            $stop['station_id'],
+                            $stop['fuel_type']
+                        );
+
+                        if ($poItem) {
+                            // Find appropriate compartment
+                            $compartment = $truck->compartments
+                                ->where('current_fuel_type_id', $poItem->fuel_type_id)
+                                ->where('available_ltrs', '>=', $stop['liters'])
+                                ->first();
+
+                            if ($compartment) {
+                                DispatchAllocationItem::create([
+                                    'dispatch_allocation_id' => $allocation->id,
+                                    'purchase_order_item_id' => $poItem->id,
+                                    'truck_compartment_id' => $compartment->id,
+                                    'liters_allocated' => $stop['liters'],
+                                    'status' => 'pending'
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return $session;
+        });
+    }
+
+    /**
+     * Find pending purchase order item for station and fuel type
+     */
+    protected function findPendingPurchaseOrderItem(int $stationId, string $fuelType): ?PurchaseOrderItem
+    {
+        return PurchaseOrderItem::whereHas('purchaseOrder', function ($query) use ($stationId) {
+            $query->where('station_id', $stationId)
+                ->whereIn('status', ['pending', 'partial']);
+        })
+            ->whereHas('fuelType', function ($query) use ($fuelType) {
+                $query->where('fuel_code', $fuelType);
+            })
+            ->whereRaw('qty_liters - delivered_ltrs > 0')
+            ->first();
+    }
+
+    /**
+     * Execute a dispatch allocation (actual delivery)
+     */
+    public function executeAllocation(DispatchAllocation $allocation, array $deliveryDetails): bool
+    {
+        return DB::transaction(function () use ($allocation, $deliveryDetails) {
+            // Mark allocation as in progress
+            $allocation->status = 'in_progress';
+            $allocation->save();
+
+            foreach ($deliveryDetails as $delivery) {
+                $item = DispatchAllocationItem::find($delivery['item_id']);
+
+                if ($item && $item->status === 'pending') {
+                    $item->markAsDelivered();
+
+                    // Update truck compartment
+                    $compartment = $item->truckCompartment;
+                    $compartment->loaded_ltrs += $item->liters_allocated;
+                    $compartment->available_ltrs = $compartment->capacity_ltrs - $compartment->loaded_ltrs;
+                    $compartment->save();
+                }
+            }
+
+            // Check if all items are delivered
+            $pendingItems = $allocation->items()->where('status', 'pending')->count();
+
+            if ($pendingItems === 0) {
+                $allocation->status = 'completed';
+                $allocation->save();
+
+                // Update dispatch session
+                $session = $allocation->dispatchSession;
+                $allCompleted = $session->allocations()
+                    ->where('status', '!=', 'completed')
+                    ->count() === 0;
+
+                if ($allCompleted) {
+                    $session->status = 'executed';
+                    $session->save();
+                }
+            }
+
+            Log::info('Allocation executed', [
+                'allocation_id' => $allocation->id,
+                'deliveries' => count($deliveryDetails)
+            ]);
+
+            return true;
+        });
+    }
+
+    /**
+     * Get optimal route for a truck (single truck optimization)
+     */
+    public function getOptimalRouteForTruck(Truck $truck, array $stationIds, ?int $startAreaId = null): array
+    {
+        $stations = Station::whereIn('id', $stationIds)->get();
+
+        // Get distances between stations
+        $distances = [];
+        $currentLocation = $startAreaId ?? $truck->current_area_id;
+
+        foreach ($stations as $station) {
+            $distances[$station->id] = $this->optimizationService->getDistanceBetweenAreas(
+                $currentLocation,
+                $station->area_id
+            );
+            $currentLocation = $station->area_id;
+        }
+
+        // Sort by nearest first (greedy)
+        uasort($distances, function ($a, $b) {
+            return $a <=> $b;
+        });
+
+        $route = [];
+        $currentLocation = $startAreaId ?? $truck->current_area_id;
+        $totalDistance = 0;
+        $totalFuelNeeded = 0;
+
+        foreach (array_keys($distances) as $stationId) {
+            $station = $stations->firstWhere('id', $stationId);
+            $distance = $this->optimizationService->getDistanceBetweenAreas($currentLocation, $station->area_id);
+
+            $route[] = [
+                'station_id' => $station->id,
+                'station_name' => $station->station_name,
+                'distance_km' => $distance,
+                'fuel_needed' => $distance / $this->optimizationService->getTruckEfficiency($truck)
             ];
 
-            // Add area_id if provided
-            if (isset($data['area_id'])) {
-                $sessionData['area_id'] = $data['area_id'];
-            }
+            $totalDistance += $distance;
+            $totalFuelNeeded += $distance / $this->optimizationService->getTruckEfficiency($truck);
+            $currentLocation = $station->area_id;
+        }
 
-            $session = DispatchSession::create($sessionData);
-
-            Log::info('Dispatch session created', [
-                'session_id' => $session->id,
-                'predicted_fuel' => $predictedFuelLiters,
-                'confidence' => $predictionConfidence,
-                'recommended_truck' => $recommendedTruck?->id,
-                'is_fallback' => $isFallback
-            ]);
-
-            return $session;
-        });
+        return [
+            'truck' => [
+                'id' => $truck->id,
+                'name' => $truck->truck_name,
+                'efficiency_km_per_l' => $this->optimizationService->getTruckEfficiency($truck),
+                'available_fuel_ltrs' => $truck->compartments->sum('available_ltrs')
+            ],
+            'route' => $route,
+            'total_distance_km' => round($totalDistance, 2),
+            'total_fuel_required' => round($totalFuelNeeded, 2),
+            'can_complete' => $truck->compartments->sum('available_ltrs') >= $totalFuelNeeded,
+            'stops_count' => count($route)
+        ];
     }
 
     /**
-     * Execute dispatch by assigning a truck
-     */
-    public function executeDispatch(DispatchSession $session, int $truckId, ?int $areaId = null): DispatchSession
-    {
-        return DB::transaction(function () use ($session, $truckId, $areaId) {
-            $truck = Truck::findOrFail($truckId);
-
-            // Verify truck can fulfill the dispatch
-            if (!$this->optimizationService->canTruckFulfill($truck, $session->predicted_fuel_liters)) {
-                throw new \Exception('Selected truck cannot fulfill this dispatch');
-            }
-
-            // Update session
-            $session->assigned_truck_id = $truckId;
-            $session->executed_by = Auth::id();
-            $session->status = 'executed';
-            $session->save();
-
-            // Create allocation - using 'liters_allocated' column
-            $allocation = DispatchAllocation::create([
-                'dispatch_session_id' => $session->id,
-                'truck_id' => $truckId,
-                'area_id' => $areaId,
-                'liters_allocated' => $session->predicted_fuel_liters, // Changed from 'allocated_liters'
-                'distance_used' => $session->distance_km,
-                'is_primary_area' => true,
-                'status' => 'pending',
-            ]);
-
-            // Update truck available liters
-            $truck->available_ltrs -= $session->predicted_fuel_liters;
-            $truck->save();
-
-            Log::info('Dispatch executed', [
-                'session_id' => $session->id,
-                'truck_id' => $truckId,
-                'allocated_liters' => $session->predicted_fuel_liters
-            ]);
-
-            return $session;
-        });
-    }
-
-    /**
-     * Create dispatch from delivery request
-     */
-    public function createFromDeliveryRequest(DeliveryRequest $request, array $additionalData = []): DispatchSession
-    {
-        $area = $request->area;
-
-        // Get distance from depot or default location
-        $distance = DB::table('distance_matrix')
-            ->where('to_area_id', $area->id)
-            ->value('distance') ?? 50; // Default 50km
-
-        $duration = $distance / 40; // Assume 40km/h average speed
-
-        $dispatchData = array_merge([
-            'distance_km' => $distance,
-            'actual_duration_hours' => $duration,
-            'average_mpg' => 6.0, // Default fuel efficiency
-            'area_id' => $area->id,
-            'notes' => "From delivery request #{$request->id}",
-            'algorithm_used' => 'greedy',
-        ], $additionalData);
-
-        return $this->createDispatchSession($dispatchData);
-    }
-
-    /**
-     * Get dispatch session with recommendations and alternatives
+     * Get dispatch session with full optimization details
      */
     public function getDispatchWithAlternatives(DispatchSession $session): array
     {
         $alternatives = $this->optimizationService->getRecommendations(
-            $session->predicted_fuel_liters,
+            $session->total_demand,
             $session->allocations->first()?->area_id,
             5
         );
 
         return [
-            'session' => $session->load(['recommendedTruck', 'assignedTruck', 'executor']),
+            'session' => $session->load(['recommendedTruck', 'assignedTruck', 'executor', 'allocations.items']),
             'recommended_truck' => $session->recommendedTruck,
             'assigned_truck' => $session->assignedTruck,
-            'alternative_trucks' => $alternatives,
-            'prediction_details' => [
-                'predicted_fuel_liters' => $session->predicted_fuel_liters,
-                'confidence_score' => $session->prediction_confidence ?? null,
-                'prediction_interval_lower' => $session->prediction_interval_lower ?? null,
-                'prediction_interval_upper' => $session->prediction_interval_upper ?? null,
-                'model_version' => $session->prediction_model_version,
-                'distance_km' => $session->distance_km,
-                'duration_hours' => $session->actual_duration_hours,
+            'alternative_trucks' => $this->optimizationService->formatRecommendationsForDisplay($alternatives),
+            'optimization_summary' => [
+                'total_demand' => $session->total_demand,
+                'total_allocated' => $session->allocations->sum('liters_allocated'),
+                'total_distance' => $session->allocations->sum('distance_used'),
+                'allocation_count' => $session->allocations->count()
             ]
         ];
     }
 
     /**
-     * Update dispatch session with actual fuel usage (for learning)
+     * Validate if a specific truck can serve a station with rule-based checks
      */
-    public function recordActualFuelUsage(DispatchSession $session, float $actualFuelUsed): void
+    public function validateTruckForStation(Truck $truck, Station $station, int $currentLocationId): array
     {
-        // Add column if it doesn't exist (you may need to add this to your table)
-        // For now, we'll store it in notes or create a new column
-        $session->notes = ($session->notes ? $session->notes . ' ' : '') . "[Actual fuel used: {$actualFuelUsed}L]";
-        $session->save();
-
-        // Calculate prediction error
-        $error = abs($actualFuelUsed - $session->predicted_fuel_liters);
-        $errorPercentage = ($error / $session->predicted_fuel_liters) * 100;
-
-        Log::info('Actual fuel usage recorded', [
-            'session_id' => $session->id,
-            'predicted' => $session->predicted_fuel_liters,
-            'actual' => $actualFuelUsed,
-            'error_percentage' => $errorPercentage
-        ]);
-
-        // Send feedback to ML model for retraining
-        $this->sendFeedbackToModel($session, $actualFuelUsed);
+        return $this->optimizationService->validateTruckForStation($truck, $station, $currentLocationId);
     }
 
     /**
-     * Send feedback to ML model for improvement
+     * Check if truck should continue to next station
      */
-    protected function sendFeedbackToModel(DispatchSession $session, float $actualFuelUsed): void
-    {
-        try {
-            $feedbackData = [
-                'prediction_id' => $session->id,
-                'predicted_fuel_liters' => $session->predicted_fuel_liters,
-                'actual_fuel_liters' => $actualFuelUsed,
-                'distance_km' => $session->distance_km,
-                'actual_duration_hours' => $session->actual_duration_hours,
-                'average_mpg' => $session->average_mpg,
-                'idle_time_hours' => $session->idle_time_hours,
-                'detention_minutes' => $session->detention_minutes,
-                'delay_minutes' => $session->delay_minutes,
-                'on_time_flag' => $session->on_time_flag,
-                'confidence_score' => $session->prediction_confidence,
-            ];
+    public function shouldTruckContinue(
+        Truck $truck,
+        Station $currentStation,
+        Station $nextStation,
+        Collection $alternativeTrucks
+    ): array {
+        $remainingCapacity = $truck->compartments->sum('available_ltrs');
 
-        } catch (\Exception $e) {
-            Log::warning('Could not send feedback to ML model', ['error' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Get analytics for dispatch performance
-     */
-    public function getAnalytics(array $dateRange = null): array
-    {
-        $query = DispatchSession::where('status', 'executed')
-            ->whereNotNull('predicted_fuel_liters');
-
-        if ($dateRange) {
-            $query->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
-        }
-
-        $sessions = $query->get();
-
-        $totalPredicted = $sessions->sum('predicted_fuel_liters');
-
-        // Calculate actual fuel from allocations
-        $totalActual = 0;
-        foreach ($sessions as $session) {
-            $actualFromAllocations = $session->allocations()->sum('liters_allocated');
-            $totalActual += $actualFromAllocations;
-        }
-
-        $averageError = $sessions->avg(function ($session) {
-            $actualFromAllocations = $session->allocations()->sum('liters_allocated');
-            if (!$actualFromAllocations || $actualFromAllocations <= 0)
-                return null;
-            return abs($actualFromAllocations - $session->predicted_fuel_liters) / $session->predicted_fuel_liters * 100;
-        });
-
-        return [
-            'total_sessions' => $sessions->count(),
-            'total_predicted_fuel' => round($totalPredicted, 2),
-            'total_actual_fuel' => round($totalActual, 2),
-            'total_savings' => round($totalPredicted - $totalActual, 2),
-            'average_prediction_error_percentage' => round($averageError ?? 0, 2),
-            'ai_optimization_rate' => round($sessions->whereNotNull('optimization_method')->count() / max($sessions->count(), 1) * 100, 2),
-            'average_confidence_score' => round($sessions->avg('prediction_confidence') ?? 0, 4),
-        ];
-    }
-
-    /**
-     * Get prediction accuracy over time
-     */
-    public function getPredictionAccuracy(int $days = 30): array
-    {
-        $sessions = DispatchSession::where('status', 'executed')
-            ->where('created_at', '>=', now()->subDays($days))
-            ->whereNotNull('predicted_fuel_liters')
-            ->with('allocations')
-            ->get();
-
-        $accuracyData = [];
-        foreach ($sessions as $session) {
-            $actualFuel = $session->allocations()->sum('liters_allocated');
-            if ($actualFuel > 0) {
-                $accuracyData[] = [
-                    'date' => $session->created_at->format('Y-m-d'),
-                    'predicted' => $session->predicted_fuel_liters,
-                    'actual' => $actualFuel,
-                    'confidence' => $session->prediction_confidence,
-                    'error_percentage' => abs($actualFuel - $session->predicted_fuel_liters) / $session->predicted_fuel_liters * 100,
-                ];
-            }
-        }
-
-        return $accuracyData;
+        return $this->optimizationService->validateContinueToNextStation(
+            $truck,
+            $currentStation,
+            $nextStation,
+            $remainingCapacity,
+            $alternativeTrucks
+        );
     }
 }

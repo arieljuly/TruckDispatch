@@ -94,47 +94,49 @@
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Toggle password visibility
-        document.querySelectorAll('.toggle-password').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const input = this.parentElement.querySelector('input');
-                if (!input) return;
-                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-                input.setAttribute('type', type);
-                const svg = this.querySelector('svg');
-                if (svg) {
-                    if (type === 'text') {
-                        svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
-                    } else {
-                        svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle password visibility
+            document.querySelectorAll('.toggle-password').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const input = this.parentElement.querySelector('input');
+                    if (!input) return;
+                    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                    input.setAttribute('type', type);
+                    
+                    // Toggle SVG icon - Option 1: Toggle between two different SVGs
+                    const svg = this.querySelector('svg');
+                    if (svg) {
+                        if (type === 'text') {
+                            // Eye with slash (hidden) icon
+                            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
+                        } else {
+                            // Regular eye icon
+                            svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+                        }
                     }
-                }
+                });
             });
+
+            // Form submission loading state
+            const form = document.getElementById('loginForm');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = 'Logging in...';
+                    }
+                });
+            }
         });
 
-        // Form submission loading state
-        const form = document.getElementById('loginForm');
-        const submitBtn = document.getElementById('submitBtn');
-
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                // Don't prevent default - let the form submit normally
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = 'Logging in...';
-                }
-            });
-        }
-    });
-
-    // Handle back button navigation for authenticated users
-    window.addEventListener('pageshow', function(event) {
-        // Check if this is a back/forward navigation
-        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
-            window.location.reload();
-        }
-    });
-</script>
+        // Handle back button navigation for authenticated users
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                window.location.reload();
+            }
+        });
+    </script>
 @endsection

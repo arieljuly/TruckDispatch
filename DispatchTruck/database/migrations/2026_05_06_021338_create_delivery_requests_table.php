@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('delivery_requests', function (Blueprint $table) {
             $table->id();
             $table->foreignId('area_id')->constrained()->onDelete('cascade');
+            $table->foreignId('station_id')->constrained()->onDelete('cascade');
+            $table->foreignId('purchase_order_item_id')->constrained()->onDelete('cascade');
             $table->decimal('requested_liters', 10, 2);
             $table->integer('priority')->default(1)->comment('1=Low, 2=Medium, 3=High, 4=Emergency');
             $table->enum('status', ['pending', 'partially_fulfilled', 'fulfilled', 'cancelled'])->default('pending');

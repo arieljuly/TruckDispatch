@@ -131,7 +131,7 @@ class TruckList extends Component
         );
 
         // Update driver status to 'on-duty'
-        $driver->update(['status' => 'on-duty']);
+        $driver->update(['status' => 'on_duty']);
 
         session()->flash('message', 'Driver assigned successfully!');
         $this->closeAssignModal();

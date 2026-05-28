@@ -14,14 +14,12 @@ class PurchaseOrderItem extends Model
         'fuel_type_id',
         'qty_liters',
         'delivered_ltrs',
-        'unit_price',
         'status',
     ];
 
     protected $casts = [
         'qty_liters' => 'decimal:3',
         'delivered_ltrs' => 'decimal:3',
-        'unit_price' => 'decimal:2',
     ];
 
     // Relationships

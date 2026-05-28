@@ -36,7 +36,7 @@ class PurchaseOrder extends Model
 
     public function items()
     {
-        return $this->hasMany(PurchaseOrderItems::class, 'purchase_order_id');
+        return $this->hasMany(PurchaseOrderItem::class, 'purchase_order_id');
     }
 
     // Helper to get total ordered liters
